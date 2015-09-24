@@ -1,0 +1,76 @@
+
+.user-map-container {
+	margin: 4em 1em;
+	border: 2px solid #eee;
+	width: 20em;
+	height: 20em;
+	width: 10em;
+	height: 10em;
+}
+
+.user-map {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.user {
+	position: absolute;
+	margin: -1em 0 0 -1em;/* half of width and height to make coordinates center */
+	width: 2em;
+	height: 2em;
+	transition: all 0.4s;
+}
+
+.user--has-unknown-position {
+	position: relative;
+	float: left;
+	left: 1em;
+	top: -2em;
+	margin-right: 2em;
+}
+
+.user--you {
+	position: absolute;
+	left: 50%;
+}
+
+.user--you.user--has-unknown-position {
+	top: auto;
+	bottom: -3em;
+}
+
+.avatar {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	border: 2px solid transparent;
+	color: #ccc;
+	background: currentcolor;
+	text-align: center;
+}
+
+.avatar .initial {
+	color: white;
+	text-transform: uppercase;
+	font-weight: bold;
+	vertical-align: middle;
+}
+
+.user--you .initial {
+	font-size: 1.4rem;
+}
+
+.user--unjoined .avatar {
+	border-style: dotted;
+}
+
+.user--has-unknown-position .avatar{
+	background: transparent;
+	border-style: dotted;
+	border-color: currentcolor;
+}
+
+.user--has-unknown-position .avatar .initial {
+	color: currentcolor;
+}

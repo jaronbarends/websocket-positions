@@ -1,0 +1,12 @@
+
+.qr-box {
+	float: right;
+	text-align: right;
+}
+
+.qr-box img {
+	float: right;
+	display: block;
+	width: 150px;
+	height: auto;
+}

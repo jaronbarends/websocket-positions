@@ -1,0 +1,12 @@
+.content-width {
+	margin: 0 auto;
+	width: 90%;
+	max-width: 70em;
+}
+
+
+.user-color {
+	margin: 0 0 2em;
+	height: 1em;
+}
+
