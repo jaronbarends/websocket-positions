@@ -23,14 +23,13 @@
 			calibrations: 0,//number of calibrations this user has made
 			hasCalibrated: false,
 			isRef: false,//flag indicating if this device is the room's central point of reference
-			directionToRef: null,//this user's angle to the ref
 			position: {x:0, y:0},//this user's position
-			angles: []//object containing the angles of this user to other users
+			isPositioned: false,
+			angles: [],//object containing the angles of this user to other users
+			angleToGrid: null//angle to the reference grid
 		},
 		sgDevice = {
-			orientation: {},
-			compassCorrection: 0,
-			referenceCorrection: 0
+			orientation: {}
 		},
 		sgUsers = [],//array of users, in order of joining
 		sgRefsAngles = [],//array of angles to users relative to ref, in order of direction
@@ -102,7 +101,7 @@
 	* @returns {undefined}
 	*/
 	var setUserColor = function() {
-		var colors = ['Aqua', 'Aquamarine', 'Black', 'Blue', 'BlueViolet', 'Brown', 'CadetBlue', 'Chartreuse', 'Chocolate', 'Coral', 'CornflowerBlue', 'Crimson', 'DarkBlue', 'DarkCyan', 'DarkGoldenRod', 'DarkGray', 'DarkGreen', 'DarkMagenta', 'DarkOliveGreen', 'DarkOrange', 'DarkOrchid', 'DarkRed', 'DarkSalmon', 'DarkSeaGreen', 'DarkSlateBlue', 'DarkSlateGray', 'DarkTurquoise', 'DarkViolet', 'DeepPink', 'DeepSkyBlue', 'DimGray', 'DodgerBlue', 'FireBrick', 'ForestGreen', 'Fuchsia', 'Gold', 'GoldenRod', 'Gray', 'Green', 'GreenYellow', 'HotPink', 'IndianRed ', 'Indigo ', 'LawnGreen', 'LightBlue', 'LightCoral', 'LightGreen', 'LightPink', 'LightSalmon', 'LightSeaGreen', 'LightSkyBlue', 'LightSlateGray', 'LightSteelBlue', 'Lime', 'LimeGreen', 'Magenta', 'Maroon', 'MediumAquaMarine', 'MediumBlue', 'MediumOrchid', 'MediumPurple', 'MediumSeaGreen', 'MediumSlateBlue', 'MediumTurquoise', 'MediumVioletRed', 'MidnightBlue', 'Navy', 'Olive', 'OliveDrab', 'Orange', 'OrangeRed', 'Orchid', 'PaleVioletRed', 'Peru', 'Pink', 'Plum', 'Purple', 'RebeccaPurple', 'Red', 'RosyBrown', 'RoyalBlue', 'SaddleBrown', 'Salmon', 'SandyBrown', 'SeaGreen', 'Sienna', 'SkyBlue', 'SlateBlue', 'SlateGray', 'SpringGreen', 'SteelBlue', 'Tan', 'Teal', 'Tomato', 'Turquoise', 'Violet', 'Yellow', 'YellowGreen'],
+		var colors = ['Aqua', 'Aquamarine', 'Black', 'Blue', 'BlueViolet', 'Brown', 'CadetBlue', 'Chartreuse', 'Chocolate', 'Coral', 'CornflowerBlue', 'Crimson', 'DarkBlue', 'DarkCyan', 'DarkGoldenRod', 'DarkGray', 'DarkGreen', 'DarkMagenta', 'DarkOliveGreen', 'DarkOrange', 'DarkOrchid', 'DarkRed', 'DarkSalmon', 'DarkSeaGreen', 'DarkSlateBlue', 'DarkSlateGray', 'DarkTurquoise', 'DarkViolet', 'DeepPink', 'DeepSkyBlue', 'DimGray', 'DodgerBlue', 'FireBrick', 'ForestGreen', 'Fuchsia', 'Gold', 'GoldenRod', 'Gray', 'Green', 'GreenYellow', 'HotPink', 'IndianRed ', 'Indigo ', 'LawnGreen', 'LightBlue', 'LightCoral', 'LightGreen', 'LightPink', 'LightSalmon', 'LightSeaGreen', 'LightSkyBlue', 'LightSlateGray', 'LightSteelBlue', 'Lime', 'LimeGreen', 'Magenta', 'Maroon', 'MediumAquaMarine', 'MediumBlue', 'MediumOrchid', 'MediumPurple', 'MediumSeaGreen', 'MediumSlateBlue', 'MediumTurquoise', 'MediumVioletRed', 'MidnightBlue', 'Navy', 'Olive', 'OliveDrab', 'Orange', 'OrangeRed', 'Orchid', 'PaleVioletRed', 'Peru', 'Pink', 'Plum', 'Purple', 'RebeccaPurple', 'Red', 'RosyBrown', 'RoyalBlue', 'SaddleBrown', 'Salmon', 'SandyBrown', 'SeaGreen', 'Sienna', 'SkyBlue', 'SlateBlue', 'SlateGray', 'SpringGreen', 'SteelBlue', 'Tan', 'Teal', 'Tomato', 'Turquoise', 'Violet', 'YellowGreen'],
 			len = colors.length;
 
 		sgUser.color = colors[Math.floor(len*Math.random())];
@@ -118,7 +117,13 @@
 	*/
 	var updateusersHandler = function(data) {
 		sgUsers = data.users;
-		//console.log('update users; changed: idx'+data.changedUser.idx);
+		if (data.changedUser.idx === sgUser.idx) {
+			//this is the user that was changed
+			sgUser = data.changedUser;
+			console.log('update users - I was changed');
+		}
+		//console.log('update users; changed: idx'+data.changedUser.idx, sgUsers);
+		console.log('update users: ', sgUsers);
 	};
 	
 
@@ -173,8 +178,6 @@
 		var tiltLR = Math.round(data.tiltLR),
 			tiltFB = Math.round(data.tiltFB),
 			dir = Math.round(data.dir);
-
-		dir -= sgDevice.compassCorrection;
 
 		if (sgDevice.orientation.tiltLR !== tiltLR || sgDevice.orientation.tiltFB !== tiltFB || sgDevice.orientation.dir !== dir) {
 			sgDevice.orientation = {
@@ -272,7 +275,8 @@
 	*/
 	var updatepositionHandler = function(data) {
 		sgPositions = data.positions;
-		console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
+		console.log('updatepositionHandler:', data);
+		//console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
 		//calculate the angles to all users
 	};
 	
@@ -299,6 +303,23 @@
 	*/
 	var joinRoom = function() {
 		io.emit('join', sgUser);
+	};
+
+
+	/**
+	* recalculate angles to change from 0 - 360 range to -180 - 180 
+	* @param {number} a The angle to recalculate rotation angle
+	* @returns {number} The recalculated angle
+	*/
+	var rebase = function(a) {
+		a = a%360;//reduce anything > 360
+		if (a > 180) {
+			a -= 360;
+		} else if (a < -180) {
+			a += 360;
+		}
+
+		return a;
 	};
 
 
@@ -333,7 +354,7 @@
 		var dummyAngles = [
 			[320],// [ab]
 			[250, 310],// [ba, bc]
-			[90, 40, 125],// [ca, cb, cd]
+			[95, 55, 125],// [ca, cb, cd]
 			[58, 328, null]// [da, dc, de]
 		];
 
@@ -351,6 +372,7 @@
 	* @returns {undefined}
 	*/
 	var showCalibration = function(otherUser) {
+		console.log('showCalibration; user:', sgUser);
 		$sgCalibrationBox.find('.calibrate-user-name')
 				.text(otherUser.username)
 			.end()
@@ -368,32 +390,34 @@
 	* so a user has done a calibration
 	* @returns {undefined}
 	*/
-	var calibrationHandler = function(e) {
-		e.preventDefault();
+	var calibrationHandler = function(evt) {
+
+		evt.preventDefault();
 		$sgCalibrationBox.hide();
 
-		//store current direction and id of other user
-		sgDevice.compassCorrection = sgDevice.orientation.dir;
-		var dir = sgDevice.orientation.dir,
-			otherUserId = $(e.currentTarget).find('[name="calibrate-user-id"]').val(),
+		var angle = sgDevice.orientation.dir;
+		if (evt.currentTarget.id === 'dummy-calibration-form') {
+			//dummy calibration was used
+			angle = $('#dummy-angle').val();
+			console.log('dummy angle:', angle);
+		}
+		angle = rebase(angle);// -180/180
+
+		log('angle:'+angle+'<br>'+otherUserId);
+
+
+		//store current angle and id of other user
+		var	otherUserId = $(evt.currentTarget).find('[name="calibrate-user-id"]').val(),
 			currCalibration = {
 				fromId: sgUser.id,
 				toId: otherUserId,
-				dir: dir
+				angle: angle
 			};
-
-		log('dir:'+sgDevice.orientation.dir+'<br>'+otherUserId);
-
-		var $form = $();
-		if (e.currentTarget.id === 'dummy-calibration-form') {
-			//dummy calibration was used
-			currCalibration.dir = $('#dummy-angle').val();
-		}
 
 		sgUser.angles.push(currCalibration);
 
 		//update number of calibrations and see if we're done for this user
-		sgUser.calibrations++;
+		//sgUser.calibrations++;
 
 		//send data back to server
 		io.emit('newcalibration', sgUser);

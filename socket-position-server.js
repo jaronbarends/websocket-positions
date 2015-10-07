@@ -11,16 +11,17 @@ var express,
 	port,
 	io;
 
-//define own global vars; prefix them with g so w
 // define own global variables and prefix them
-// with g so we can easily distinguish them from "normal" function-scope vars
-var gRooms,
-	gRoomname = 'defaultRoom',//we'll only be using one room
-	gUsers = [],
-	gPositions = [],
-	gAngles = [],// array with for every user an array containing its angles to all other users
-	gMaxPointingDeviation = 30,// maximum deviation on either side from the registered angle to a user; you're pointing at a user when you point within (registeredAngle - gMaxPointingDeviation and registeredAngle + gMaxPointingDeviation)
-	gReferenceLength = 100;
+// so we can easily distinguish them from "normal" function-scope vars
+// we usually prefix semi-globals with sg, so it would make sense to prefix with g now
+// but we'll stick to sg to be able to easily copy variable names etc
+var sgRooms,
+	sgRoomname = 'defaultRoom',//we'll only be using one room
+	sgUsers = [],
+	sgPositions = [],
+	sgAngles = [],// array with for every user an array containing its angles to all other users
+	sgMaxPointingDeviation = 30,// maximum deviation on either side from the registered angle to a user; you're pointing at a user when you point within (registeredAngle - sgMaxPointingDeviation and registeredAngle + sgMaxPointingDeviation)
+	sgReferenceLength = 100;
 
 
 
@@ -53,7 +54,7 @@ var gRooms,
 	* @returns {undefined}
 	*/
 	var createServer = function() {
-		gRooms = io.on('connection', function (socket) {
+		sgRooms = io.on('connection', function (socket) {
 
 			// A new client has come online. 
 			socket.emit('connectionready');
@@ -85,15 +86,33 @@ var gRooms,
 
 //-- Start user management functions --
 
+
 	/**
-	* remove a user from the gUsers array
+	* get a user from the users-array by their id
+	* @param {string} id The id of the user to find
+	* @returns {object} the searched for user object or false
+	*/
+	var getUserById = function(id) {
+		var user;
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			if (sgUsers[i].id === id) {
+				user = sgUsers[i];
+				break;
+			}
+		}
+		return user;
+	};
+
+
+	/**
+	* remove a user from the sgUsers array
 	* @returns {object} The removed user's user object
 	*/
 	var removeUser = function(id) {
 		var removedUser;
-		for (var i=0, len=gUsers.length; i<len; i++) {
-			if (gUsers[i].id === id) {
-				removedUser = gUsers.splice(i,1)[0];//splice returns array, so take element 0 of that
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			if (sgUsers[i].id === id) {
+				removedUser = sgUsers.splice(i,1)[0];//splice returns array, so take element 0 of that
 				break;
 			}
 		}
@@ -114,14 +133,14 @@ var gRooms,
 		//console.log(socket.adapter);
 		var data = {
 			removedUser: removedUser,
-			users: gUsers
+			users: sgUsers
 		};
 
 		//io.sockets.adapter contains two objects: rooms and sids which are similar
 		//rooms contains an object for every socket, and one for every room
 		//sids only contains an object for every socket.
 		//so the ones that are in rooms but not in sids are the rooms the socket was in.
-		gRooms.emit('disconnect', data);
+		sgRooms.emit('disconnect', data);
 	};
 
 
@@ -132,10 +151,10 @@ var gRooms,
 	* @returns {undefined}
 	*/
 	var joinHandler = function(socket, user) {
-		socket.join(gRoomname);
+		socket.join(sgRoomname);
 
 		//add stuff server manages to user
-		var idx = gUsers.length;//index in gUsers array for easy reference
+		var idx = sgUsers.length;//index in sgUsers array for easy reference
 		// console.log('idx:',idx);
 		user.idx = idx;
 
@@ -144,14 +163,14 @@ var gRooms,
 			user.isRef = true;
 		}
 
-		//add the new user's data to the gUsers array
-		gUsers.push(user);
+		//add the new user's data to the sgUsers array
+		sgUsers.push(user);
 
 		//send message to newly joined user
-		socket.emit('joined', gUsers);
+		socket.emit('joined', sgUsers);
 
 		//send message to rest of the room
-		socket.broadcast.emit('newuser', gUsers);
+		socket.broadcast.emit('newuser', sgUsers);
 
 		nextCalibration();
 	};
@@ -165,8 +184,8 @@ var gRooms,
 	* @returns {undefined}
 	*/
 	var updateusersHandler = function(socket, data) {
-		gUsers = data.users;
-		gRooms.emit('updateusers', data);
+		sgUsers = data.users;
+		sgRooms.emit('updateusers', data);
 	};
 
 
@@ -177,10 +196,10 @@ var gRooms,
 	*/
 	var emitUsersChange = function(user) {
 		var data = {
-			users: gUsers,
+			users: sgUsers,
 			changedUser: user
 		};	
-		gRooms.emit('updateusers', data);
+		sgRooms.emit('updateusers', data);
 	};
 	
 
@@ -199,6 +218,24 @@ var gRooms,
 		var radians = 2*Math.PI * degrees/360;
 		return radians;
 	};
+
+
+	/**
+	* recalculate angles to change from 0 - 360 range to -180 - 180 
+	* @param {number} a The angle to recalculate rotation angle
+	* @returns {number} The recalculated angle
+	*/
+	var rebase = function(a) {
+		a = a%360;//reduce anything > 360
+		if (a > 180) {
+			a -= 360;
+		} else if (a < -180) {
+			a += 360;
+		}
+
+		return a;
+	};
+	
 
 
 	/**
@@ -240,6 +277,88 @@ var gRooms,
 
 		return angle;
 	};
+
+
+	/**
+	* convert an angle in the device's coordinate space to the grid's coordinate space
+	* @param {number} deviceAngle The angle in the device's coordinate space
+	* @param {object} user The user for whom we want to do the conversion
+	* @returns {number} The converted angle
+	*/
+	var convertToGridAngle = function(deviceAngle, user) {
+		var angleToGrid = user.angleToGrid,
+			gridAngle = deviceAngle - angleToGrid;
+
+		gridAngle = rebase(gridAngle);
+			
+		return gridAngle;
+	};
+	
+
+
+	/**
+	* calculate a device's angle to the default grid system
+	* @param {object} user The user object
+	* @param {object} calibration The user's last calibration
+	* @returns {the angle to the grid}
+	*/
+	var calculateAngleToGrid = function(user, calibration) {
+		//special cases
+		//console.log('calculateAngleToGrid', user.idx);
+		var angleToGrid;
+		if (user.idx === 0) {
+			//its the first user; by definition, toGrid is angle to idx1
+			angleToGrid = calibration.angle;
+			//console.log('0 to grid: ', angleToGrid);
+		} else {
+			//get other user's info; his last angle is the one to current
+			var angleToOtherUser = calibration.angle,
+				otherUser = getUserById(calibration.toId),
+				//otherUserToCurr = otherUser.angles[otherUser.angles.length-1].angle;
+				otherUserToCurr = getLastUserAngle(otherUser);
+			//console.log('otherUserToGrid: ', otherUserToGrid);
+			//console.log('otherUserToCurr: ', otherUserToCurr);
+
+			var otherUserToCurrOnGrid = convertToGridAngle(otherUserToCurr, otherUser);
+			angleToGrid = angleToOtherUser - otherUserToCurrOnGrid - 180;
+		}
+
+		angleToGrid = rebase(angleToGrid);
+
+		return angleToGrid;
+	};
+
+
+	/**
+	* get the user's angle to another user that was determined last
+	* @param {object} user The user object from the user whose last angle we want
+	* @returns {number} the angle
+	*/
+	var getLastUserAngle = function(user) {
+		var angle = user.angles[user.angles.length-1].angle;
+
+		return angle;
+	};
+
+
+	/**
+	* get the grid angle for user B to user A, based on the grid angle for user A to user B
+	* @param {number} gridAngle The grid angle from A to B
+	* @returns {number} The rebased grid angle from B to A
+	*/
+	var getOtherUserGridAngle = function(gridAngle) {
+		var absAngle = Math.abs(gridAngle),
+			oppositeGridAngle = 180 - absAngle;
+
+		if (gridAngle > 0) {
+			oppositeGridAngle = -oppositeGridAngle;
+		}
+
+		return oppositeGridAngle;
+	};
+	
+	
+	
 	
 
 
@@ -253,21 +372,80 @@ var gRooms,
 	
 
 	/**
-	* calculate a user's position within the ref's coordinate system
+	* calculate a user's position within the grid's coordinate system
 	* @param {user object} user The user whose position to calculate
 	* @returns {object} The users object position {x:x, y:y}
 	*/
 	var getCalculatedPosition = function(user) {
-		console.log('calculate pos for user', user.idx);
+		//console.log('calculate pos for user', user.idx);
 		var x,
 			y;
+			
 		if (user.idx === 0) {
 			x = 0;
 			y = 0;
 		} else if (user.idx === 1) {
 			//put on default reference length
 			x = 0;
-			y = gReferenceLength;
+			y = sgReferenceLength;
+		} else {
+			// for sake of this calculation:
+			// let's call the idx of the user to check n
+			// user calibrates with idx0 (nodeA)
+			// call idx0 userA, the user we're investigating userN, idx-n and the previous user userM idx-m
+			// see the image in docs/calculations.png
+
+			var n = user.idx,
+				m = n-1,
+				userA = sgUsers[0],
+				userN = user,
+				userM = sgUsers[m];
+			
+			//determine in which direction userN is relative to A and M
+
+			//determine angle from  A to N
+			var na = userN.angles[0].angle,
+				naGrid = convertToGridAngle(na, userN),
+				anGrid = getOtherUserGridAngle(naGrid);
+
+			//get angle from M to N
+			var mn = getLastUserAngle(userM),
+				mnGrid = convertToGridAngle(mn, userM),
+				nmGrid = getOtherUserGridAngle(mnGrid);
+
+
+			console.log('na:',na, 'naGrid:', naGrid, 'anGrid:',anGrid);
+			console.log('mn:',mn, 'mnGrid:', mnGrid, 'nmGrid:',nmGrid);
+			
+
+		}
+		
+		var position = {
+			x: x,
+			y: y
+		};
+
+		return position;
+	};
+	
+
+	/**
+	* calculate a user's position within the grid's coordinate system
+	* @param {user object} user The user whose position to calculate
+	* @returns {object} The users object position {x:x, y:y}
+	*/
+	var getCalculatedPosition_bak = function(user) {
+		//console.log('calculate pos for user', user.idx);
+		var x,
+			y;
+			
+		if (user.idx === 0) {
+			x = 0;
+			y = 0;
+		} else if (user.idx === 1) {
+			//put on default reference length
+			x = 0;
+			y = sgReferenceLength;
 		} else {
 			// for sake of this calculation:
 			// let's call the idx of the user to check n
@@ -276,15 +454,15 @@ var gRooms,
 			// see the image in docs/calculations.png
 
 			//calculate angles bac, abc and acb
-			var nodeB = gUsers[1],
-				ba = nodeB.angles[0].dir,//angle from B to A
-				bc = nodeB.angles[1].dir,//angle from B to C
+			var nodeB = sgUsers[1],
+				ba = nodeB.angles[0].angle,//angle from B to A
+				bc = nodeB.angles[1].angle,//angle from B to C
 				abc = getAngle(ba, bc);
 			// console.log('ba:', ba, 'bc:', bc, 'abc:', abc);
 
 			var nodeC = user,
-				ca = nodeC.angles[0].dir,//angle from C to A
-				cb = nodeC.angles[1].dir,//angle from C to B
+				ca = nodeC.angles[0].angle,//angle from C to A
+				cb = nodeC.angles[1].angle,//angle from C to B
 				acb = getAngle(ca, cb);
 			// console.log('ca:', ca, 'cb:', cb, 'acb:', acb);
 
@@ -295,7 +473,7 @@ var gRooms,
 			var bac = 180 - abc - acb,
 				bacRadians = degreesToRadians(bac);
 
-			var AB = gReferenceLength,
+			var AB = sgReferenceLength,
 				baz = 90 - abc,
 				caz = bac - baz,
 				AC = AB*Math.cos(degreesToRadians(baz)) / Math.cos(degreesToRadians(caz));
@@ -346,7 +524,7 @@ var gRooms,
 				otherIdx = idx-1;
 			}
 		}
-		otherUser = gUsers[otherIdx];
+		otherUser = sgUsers[otherIdx];
 
 		return otherUser;
 	};
@@ -363,13 +541,25 @@ var gRooms,
 			done = false,
 			canBePositioned = false;
 
-			var dirs = user.angles,
-				lastCalibration = dirs[dirs.length-1],
-				dir = lastCalibration.dir;
+		var angles = user.angles,
+			lastCalibration = angles[angles.length-1],
+			angle = lastCalibration.angle;
 
-			// console.log('calibration from ',idx, dir)
 
-		gUsers[idx] = user;//update the user
+
+		// console.log('calibration from ',idx, 'angle: ', angle);
+		// console.log('angleToGrid:', user.angleToGrid);
+
+		// users 0 and 1 can determine their angle to grid on first calibration;
+		// other users have to calibrate with their second calibration
+		if ( (user.idx <= 1 && user.calibrations === 0) || (user.idx > 1 && user.calibrations === 1) ){
+			user.angleToGrid = calculateAngleToGrid(user, lastCalibration);
+		}
+
+		user.calibrations++;
+		sgUsers[idx] = user;//update the user
+		emitUsersChange(user);
+
 
 		//see if we're done
 		if (user.isRef || user.idx === 1 || user.calibrations === 2) {
@@ -385,21 +575,26 @@ var gRooms,
 			//there is a change to send to the rest
 			user.hasCalibrated = true;
 		}
-		if (canBePositioned) {
+
+		if (canBePositioned && user.isPositioned === false) {
 			//when this is true, hasCalibrated is always true
+			//console.log('go calc position for idx', idx, ' togrid:', user.angleToGrid);
 			var position = getCalculatedPosition(user);
 			user.position = position;
-			gPositions.push(position);
+			user.isPositioned = true;
+			sgPositions.push(position);
 
 			//update the object which has every user's angles to all other users
-			updateAngles();
+			//updateAngles();
 
-			var data = {
-				users: gUsers,
+			emitUsersChange(user);
+
+			var positionData = {
+				users: sgUsers,
 				changedUser: user,
-				positions: gPositions
+				positions: sgPositions
 			};
-			gRooms.emit('updateposition', data);
+			sgRooms.emit('updateposition', positionData);
 			//emitUsersChange(user);
 		}
 
@@ -414,13 +609,12 @@ var gRooms,
 	* @returns {undefined}
 	*/
 	var nextCalibration = function() {
-		// console.log('next calibration');
 
-		var len = gUsers.length;
+		var len = sgUsers.length;
 		if (len > 1) {
 			//nothing to calibrate when there's only one user
 			for (var i=0; i<len; i++) {
-				var user = gUsers[i];
+				var user = sgUsers[i];
 				if (!user.hasCalibrated) {
 					var id = user.id,
 						otherUser = getUserToCalibrateWith(user),
@@ -431,7 +625,7 @@ var gRooms,
 
 					if (otherUser) {
 						// console.log('next up:', user.username);
-						gRooms.emit('nextcalibration', data);
+						sgRooms.emit('nextcalibration', data);
 					} else {
 						//if there's no other user, calibration stops for now
 						// console.log('no one left to calibrate');
@@ -456,7 +650,7 @@ var gRooms,
 */
 var passThroughHandler = function(data) {
 	if (data.eventName) {
-		gRooms.emit(data.eventName, data.eventData);
+		sgRooms.emit(data.eventName, data.eventData);
 	}
 };
 
