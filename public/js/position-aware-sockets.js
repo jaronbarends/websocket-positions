@@ -351,14 +351,13 @@
 	* @returns {undefined}
 	*/
 	var setDummyAngle = function() {
-		var dummyAngles = [
-			[320],// [ab]
-			[250, 310],// [ba, bc]
-			[95, 55, 125],// [ca, cb, cd]
-			[58, 328, null]// [da, dc, de]
+		var dummyDeviceAngles = [
+			[250],// [ab]
+			[320, 240],// [ba, bc]
+			[55, 95, 135],// [ca, cb, cd]
+			[35, 340, null]// [da, dc, de]
 		];
-
-		var angle = dummyAngles[sgUser.idx][sgUser.calibrations];
+		var angle = dummyDeviceAngles[sgUser.idx][sgUser.calibrations];
 
 		console.log(angle, sgUser.idx, sgUser.calibrations);
 

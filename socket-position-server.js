@@ -289,7 +289,14 @@ var sgRooms,
 		var angleToGrid = user.angleToGrid,
 			gridAngle = deviceAngle - angleToGrid;
 
+		// console.log('convertToGridAngle - user:', user.idx);
+		// console.log('convertToGridAngle - deviceAngle:', deviceAngle);
+		// console.log('convertToGridAngle - angleToGrid:', angleToGrid);
+		// console.log('convertToGridAngle - gridAngle:', gridAngle);
+
 		gridAngle = rebase(gridAngle);
+
+		// console.log('convertToGridAngle - rebase gridAngle:', gridAngle);
 			
 		return gridAngle;
 	};
@@ -314,16 +321,18 @@ var sgRooms,
 			//get other user's info; his last angle is the one to current
 			var angleToOtherUser = calibration.angle,
 				otherUser = getUserById(calibration.toId),
-				//otherUserToCurr = otherUser.angles[otherUser.angles.length-1].angle;
 				otherUserToCurr = getLastUserAngle(otherUser);
-			//console.log('otherUserToGrid: ', otherUserToGrid);
-			//console.log('otherUserToCurr: ', otherUserToCurr);
+			// console.log('otherUser:', otherUser.idx);
+			// console.log('otherUserToCurr: ', otherUserToCurr);
 
 			var otherUserToCurrOnGrid = convertToGridAngle(otherUserToCurr, otherUser);
+			// console.log('otherUserToCurrOnGrid:', otherUserToCurrOnGrid);
 			angleToGrid = angleToOtherUser - otherUserToCurrOnGrid - 180;
+			// console.log('angleToGrid for user', user.idx);
 		}
 
 		angleToGrid = rebase(angleToGrid);
+		// console.log('rebased angleToGrid for user', user.idx,':', angleToGrid);
 
 		return angleToGrid;
 	};
@@ -401,22 +410,62 @@ var sgRooms,
 				userN = user,
 				userM = sgUsers[m];
 			
-			//determine in which direction userN is relative to A and M
-
-			//determine angle from  A to N
+			// determine angle from  A to N
 			var na = userN.angles[0].angle,
 				naGrid = convertToGridAngle(na, userN),
 				anGrid = getOtherUserGridAngle(naGrid);
 
-			//get angle from M to N
+			// get angle from M to N
 			var mn = getLastUserAngle(userM),
 				mnGrid = convertToGridAngle(mn, userM),
 				nmGrid = getOtherUserGridAngle(mnGrid);
 
+			// get userM's position values
+			var mx = userM.position.x,
+				my = userM.position.y;
 
-			console.log('na:',na, 'naGrid:', naGrid, 'anGrid:',anGrid);
-			console.log('mn:',mn, 'mnGrid:', mnGrid, 'nmGrid:',nmGrid);
-			
+			// based on the lengths of AN and MN and the angles, we can calculate the x- and y-distance of N to A and M
+			// determine check if we have to add or subtract these lengths from a.x, a.y, m.x and m.y
+			var ANxPosNeg = (anGrid > 0) ? 1 : -1,//if (anGrid > 0), N is to right of A, use +1, else -1
+				ANyPosNeg = (Math.abs(anGrid) < 90) ? 1 : -1,// if angle is between -90 and 90, N is below A (so has *higher* y value), 1 else -1
+				MNxPosNeg = (mnGrid > 0) ? 1 : -1,//if (mnGrid > 0), N is to right of M, use +1, else -1
+				MNyPosNeg = (Math.abs(mnGrid) < 90) ? 1 : -1;// if angle is between -90 and 90, N is below M (so has *higher* y value), 1 else -1
+
+				console.log('ANxPosNeg:', ANxPosNeg, 'ANyPosNeg', ANyPosNeg);
+				console.log('MNxPosNeg:', MNxPosNeg, 'MNyPosNeg', MNyPosNeg);
+
+			console.log('anGrid:', anGrid, 'naGrid:', naGrid, 'mnGrid:', mnGrid, 'nmGrid:', nmGrid);
+
+			// create vars for absolute values of sin and cos of smallest angles - these are the angles inside the AMN triangle
+			//determine smallest angles
+			var anOrNaGridMin = Math.min(Math.abs(anGrid), Math.abs(naGrid)),
+				mnOrNmGridMin = Math.min(Math.abs(mnGrid), Math.abs(nmGrid));
+
+			//Math.sin and Math.cos expect radians, not degrees
+			var anOrNaGridMinRad = degreesToRadians(anOrNaGridMin),
+				mnOrNmGridMinRad = degreesToRadians(mnOrNmGridMin);
+
+			var sinan = Math.abs(Math.sin(anOrNaGridMinRad)),
+				cosan = Math.abs(Math.cos(anOrNaGridMinRad)),
+				sinmn = Math.abs(Math.sin(mnOrNmGridMinRad)),
+				cosmn = Math.abs(Math.cos(mnOrNmGridMinRad));
+
+			console.log('anOrNaGridMin:', anOrNaGridMin, 'sinan:', sinan, 'cosan:', cosan);
+			console.log('mnOrNmGridMin:', mnOrNmGridMin, 'sinnn:', sinmn, 'cosnn:', cosmn);
+
+			// calculate length of MN
+			var MN = ( my/(ANyPosNeg*cosan) - mx/(ANxPosNeg*sinan) ) / ( (MNxPosNeg*sinmn)/(ANxPosNeg*sinan) - (MNyPosNeg*cosmn)/(ANyPosNeg*cosan) ),
+				nx = mx + MNxPosNeg * MN * sinmn,
+				ny = my + MNyPosNeg * MN * cosmn;
+
+			console.log('MN:', MN);
+
+			// console.log('nx:', nx, 'ny:', ny);
+
+			//console.log('na:',na, 'naGrid:', naGrid, 'anGrid:',anGrid);
+			//console.log('mn:',mn, 'mnGrid:', mnGrid, 'nmGrid:',nmGrid);
+			x = nx;
+			y = ny;
 
 		}
 		
@@ -424,6 +473,11 @@ var sgRooms,
 			x: x,
 			y: y
 		};
+
+		if (user.idx === 0) {
+			console.log('\n-----------------------------------------------\n');
+		}
+		console.log(position);
 
 		return position;
 	};
@@ -545,14 +599,12 @@ var sgRooms,
 			lastCalibration = angles[angles.length-1],
 			angle = lastCalibration.angle;
 
-
-
-		// console.log('calibration from ',idx, 'angle: ', angle);
+		console.log('calibration from ',idx, 'angle: ', angle);
 		// console.log('angleToGrid:', user.angleToGrid);
 
 		// users 0 and 1 can determine their angle to grid on first calibration;
 		// other users have to calibrate with their second calibration
-		if ( (user.idx <= 1 && user.calibrations === 0) || (user.idx > 1 && user.calibrations === 1) ){
+		if ( (user.idx <= 1 && user.calibrations === 0) || (user.idx > 1 && user.calibrations === 1) ) {
 			user.angleToGrid = calculateAngleToGrid(user, lastCalibration);
 		}
 
