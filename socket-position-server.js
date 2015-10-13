@@ -431,10 +431,10 @@ var sgRooms,
 				MNxPosNeg = (mnGrid > 0) ? 1 : -1,//if (mnGrid > 0), N is to right of M, use +1, else -1
 				MNyPosNeg = (Math.abs(mnGrid) < 90) ? 1 : -1;// if angle is between -90 and 90, N is below M (so has *higher* y value), 1 else -1
 
-				console.log('ANxPosNeg:', ANxPosNeg, 'ANyPosNeg', ANyPosNeg);
-				console.log('MNxPosNeg:', MNxPosNeg, 'MNyPosNeg', MNyPosNeg);
+				// console.log('ANxPosNeg:', ANxPosNeg, 'ANyPosNeg', ANyPosNeg);
+				// console.log('MNxPosNeg:', MNxPosNeg, 'MNyPosNeg', MNyPosNeg);
 
-			console.log('anGrid:', anGrid, 'naGrid:', naGrid, 'mnGrid:', mnGrid, 'nmGrid:', nmGrid);
+			// console.log('anGrid:', anGrid, 'naGrid:', naGrid, 'mnGrid:', mnGrid, 'nmGrid:', nmGrid);
 
 			// create vars for absolute values of sin and cos of smallest angles - these are the angles inside the AMN triangle
 			//determine smallest angles
@@ -450,15 +450,15 @@ var sgRooms,
 				sinmn = Math.abs(Math.sin(mnOrNmGridMinRad)),
 				cosmn = Math.abs(Math.cos(mnOrNmGridMinRad));
 
-			console.log('anOrNaGridMin:', anOrNaGridMin, 'sinan:', sinan, 'cosan:', cosan);
-			console.log('mnOrNmGridMin:', mnOrNmGridMin, 'sinnn:', sinmn, 'cosnn:', cosmn);
+			// console.log('anOrNaGridMin:', anOrNaGridMin, 'sinan:', sinan, 'cosan:', cosan);
+			// console.log('mnOrNmGridMin:', mnOrNmGridMin, 'sinnn:', sinmn, 'cosnn:', cosmn);
 
 			// calculate length of MN
 			var MN = ( my/(ANyPosNeg*cosan) - mx/(ANxPosNeg*sinan) ) / ( (MNxPosNeg*sinmn)/(ANxPosNeg*sinan) - (MNyPosNeg*cosmn)/(ANyPosNeg*cosan) ),
 				nx = mx + MNxPosNeg * MN * sinmn,
 				ny = my + MNyPosNeg * MN * cosmn;
 
-			console.log('MN:', MN);
+			// console.log('MN:', MN);
 
 			// console.log('nx:', nx, 'ny:', ny);
 
@@ -577,6 +577,9 @@ var sgRooms,
 				//second user to calibrate with is the previous user
 				otherIdx = idx-1;
 			}
+		} else {
+			//userCalibrations === 2; calibrate with next
+			otherIdx = idx+1;
 		}
 		otherUser = sgUsers[otherIdx];
 
@@ -618,7 +621,7 @@ var sgRooms,
 			//ref and idx can be positioned after 1st calibration
 			canBePositioned = true;
 		}
-		if (user.isRef || user.calibrations === 2) {
+		if (user.isRef || (user.idx === 1 && user.calibrations === 2) || user.calibrations === 3) {
 			//ref only has to calibrate with idx1; all other have to calibrate twice
 			done = true;
 		}
@@ -627,6 +630,7 @@ var sgRooms,
 			//there is a change to send to the rest
 			user.hasCalibrated = true;
 		}
+		// console.log('see if we\'re done: user.idx:', user.idx,' user.calibrations:', user.calibrations, 'done:', done);
 
 		if (canBePositioned && user.isPositioned === false) {
 			//when this is true, hasCalibrated is always true
@@ -674,13 +678,15 @@ var sgRooms,
 							id: id,
 							otherUser: otherUser
 						};
+					console.log('nextCalibration; up:', user.idx);
 
 					if (otherUser) {
 						// console.log('next up:', user.username);
+						console.log('otherUser:', otherUser.idx);
 						sgRooms.emit('nextcalibration', data);
 					} else {
 						//if there's no other user, calibration stops for now
-						// console.log('no one left to calibrate');
+						console.log('no one left to calibrate');
 					}
 					break;
 				}

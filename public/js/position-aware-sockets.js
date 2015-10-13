@@ -355,7 +355,9 @@
 			[250],// [ab]
 			[320, 240],// [ba, bc]
 			[55, 95, 135],// [ca, cb, cd]
-			[35, 340, null]// [da, dc, de]
+			[35, 340, 10],// [da, dc, de]
+			[35, 100, 50],// [ea, ed, ef]
+			[115, 100, null]// [fa, fe, fg]
 		];
 		var angle = dummyDeviceAngles[sgUser.idx][sgUser.calibrations];
 
