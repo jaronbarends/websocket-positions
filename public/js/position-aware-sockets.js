@@ -454,10 +454,12 @@
 	/**
 	* kick off the app once the socket connection is ready
 	* @param {event} e The ready.socket event sent by socket js
-	* @param {Socket} socket This client's socket
+	* @param {objet} data Data object {io, users}
 	* @returns {undefined}
 	*/
-	var connectionReadyHandler = function(e, io) {
+	var connectionReadyHandler = function(e, data) {
+		var io = data.io,
+			users = data.users;
 		if (io) {
 			initRemote();
 		}

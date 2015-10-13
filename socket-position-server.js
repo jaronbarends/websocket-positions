@@ -56,8 +56,11 @@ var sgRooms,
 	var createServer = function() {
 		sgRooms = io.on('connection', function (socket) {
 
-			// A new client has come online. 
-			socket.emit('connectionready');
+			// A new client has come online.
+			var data = {
+				users: sgUsers
+			};
+			socket.emit('connectionready', data);
 
 			socket.on('disconnect', function(){
 				disconnectHandler(socket);
@@ -77,6 +80,8 @@ var sgRooms,
 
 			//set handler for events that only have to be passsed on to all sockets
 			socket.on('passthrough', passThroughHandler);
+
+			socket.on('getusers', getusersHandler);
 		});
 	};
 
@@ -118,6 +123,20 @@ var sgRooms,
 		}
 		return removedUser;
 	};
+
+
+	/**
+	* handle request for users object by socket
+	* @param {socket object} socket The socket requesting the users object
+	* @returns {undefined}
+	*/
+	var getusersHandler = function(socket) {
+		
+		var data = {
+			users: sgUsers
+		};
+	};
+	
 
 
 	/**
@@ -602,7 +621,7 @@ var sgRooms,
 			lastCalibration = angles[angles.length-1],
 			angle = lastCalibration.angle;
 
-		console.log('calibration from ',idx, 'angle: ', angle);
+		// console.log('calibration from ',idx, 'angle: ', angle);
 		// console.log('angleToGrid:', user.angleToGrid);
 
 		// users 0 and 1 can determine their angle to grid on first calibration;
@@ -678,15 +697,15 @@ var sgRooms,
 							id: id,
 							otherUser: otherUser
 						};
-					console.log('nextCalibration; up:', user.idx);
+					// console.log('nextCalibration; up:', user.idx);
 
 					if (otherUser) {
 						// console.log('next up:', user.username);
-						console.log('otherUser:', otherUser.idx);
+						// console.log('otherUser:', otherUser.idx);
 						sgRooms.emit('nextcalibration', data);
 					} else {
 						//if there's no other user, calibration stops for now
-						console.log('no one left to calibrate');
+						// console.log('no one left to calibrate');
 					}
 					break;
 				}

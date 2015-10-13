@@ -37,7 +37,7 @@
 	*/
 	var getUserObjectById = function(id) {
 		var $user;
-		if (sgUser.id === id) {
+		if (sgUser && sgUser.id === id) {//when this function is called before this user joined, sgUser is undefined
 			$user = $sgYou;
 		} else {
 			$user = $('#'+id);
@@ -108,16 +108,29 @@
 	};
 
 
+	/**
+	* when there are users present already, add them
+	* @returns {undefined}
+	*/
+	var addExistingUsers = function() {
+		
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			var user = sgUsers[i];
+			createUser(user);
+			if (user.isPositioned) {
+				updateUserPosition(user);
+			}
+		}
+	};
 
 
 	/**
-	* a user's position has been updated
+	* update a user's position
+	* @param {object} user The user object of the user we want to position
 	* @returns {undefined}
-	* @param {object} data Object containing users-array and changeduser {users, changedUser}
 	*/
-	var updatepositionHandler = function(data) {
-		var user = data.changedUser,
-			id = user.id,
+	var updateUserPosition = function(user) {
+		var id = user.id,
 			$user = getUserObjectById(id);
 
 		var pos = {
@@ -126,12 +139,23 @@
 		};
 
 		// console.log(pos);
-		if (user.id === sgUser.id) {
+		if (sgUser && user.id === sgUser.id) {
 			// console.log('its me');
 		}
 
 		$user.removeClass('user--has-unknown-position')
 			.css(pos);
+	};
+	
+	
+
+	/**
+	* a user's position has been updated
+	* @returns {undefined}
+	* @param {object} data Object containing users-array and changeduser {users, changedUser}
+	*/
+	var updatepositionHandler = function(data) {
+		updateUserPosition(data.changedUser);
 	};
 	
 
@@ -153,7 +177,8 @@
 	* initialize the remote
 	* @returns {undefined}
 	*/
-	var initPassing = function() {
+	var initSocketPositioning = function() {
+
 		initSocketListeners();
 	};
 
@@ -161,13 +186,19 @@
 	/**
 	* kick off the code for passing once the socket connection is ready
 	* @param {event} e The ready.socket event sent by socket js
-	* @param {Socket} socket This client's socket
+	* @param {objet} data Data object {io, users}
 	* @returns {undefined}
 	*/
-	var connectionReadyHandler = function(e, io) {
+	var connectionReadyHandler = function(e, data) {
+		var io = data.io,
+			users = data.users;
+
 		if (io) {
-			initPassing();
+			initSocketPositioning();
 		}
+
+		sgUsers = users;
+		addExistingUsers();
 	};
 
 

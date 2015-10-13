@@ -12,8 +12,13 @@
 	* handle server's connectionready event
 	* @returns {undefined}
 	*/
-	var connectionreadyHandler = function() {
-		$(document).trigger('connectionready.socket', io);
+	var connectionreadyHandler = function(data) {
+		console.log('ready:',data);
+		var newData = {
+			io: io,
+			users: data.users
+		};
+		$(document).trigger('connectionready.socket', newData);
 	};
 	
 
