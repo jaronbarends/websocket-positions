@@ -17,3 +17,11 @@ form {
 .few-chars {
 	width: 4em;
 }
+
+#dummy-calibration-form {
+	background: red;
+}
+
+.dummy-calibration-form {
+	/*display: none !important;*/
+}

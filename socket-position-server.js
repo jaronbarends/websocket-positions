@@ -70,6 +70,10 @@ var sgRooms,
 				joinHandler(socket, data);
 			});
 
+			socket.on('leave', function(data) {
+				leaveHandler(socket);
+			});
+
 			socket.on('newcalibration', function(user) {
 				newcalibrationHandler(socket, user);
 			});
@@ -114,7 +118,7 @@ var sgRooms,
 	* @returns {object} The removed user's user object
 	*/
 	var removeUser = function(id) {
-		var removedUser;
+		var removedUser = null;
 		for (var i=0, len=sgUsers.length; i<len; i++) {
 			if (sgUsers[i].id === id) {
 				removedUser = sgUsers.splice(i,1)[0];//splice returns array, so take element 0 of that
@@ -136,6 +140,28 @@ var sgRooms,
 			users: sgUsers
 		};
 	};
+
+
+	/**
+	* handle user leaving
+	* @param {socket object} socket The leaving socket
+	* @returns {undefined}
+	*/
+	var leaveHandler = function(socket) {
+
+		socket.leave(sgRoomname);
+		
+		var removedUser = removeUser(socket.id);
+		
+		var data = {
+			removedUser: removedUser,
+			users: sgUsers
+		};
+		sgRooms.emit('userleft', data);
+
+		return data;
+	};
+	
 	
 
 
@@ -145,15 +171,8 @@ var sgRooms,
 	* @returns {undefined}
 	*/
 	var disconnectHandler = function(socket) {
-		// console.log('\n-------------------------------------------');
 		// console.log('user '+socket.id+' disconnected\n');
-
-		var removedUser = removeUser(socket.id);
-		//console.log(socket.adapter);
-		var data = {
-			removedUser: removedUser,
-			users: sgUsers
-		};
+		var data = leaveHandler(socket);
 
 		//io.sockets.adapter contains two objects: rooms and sids which are similar
 		//rooms contains an object for every socket, and one for every room
@@ -700,12 +719,12 @@ var sgRooms,
 					// console.log('nextCalibration; up:', user.idx);
 
 					if (otherUser) {
-						// console.log('next up:', user.username);
-						// console.log('otherUser:', otherUser.idx);
+						 console.log('next up:', user.username);
+						 console.log('otherUser:', otherUser.idx);
 						sgRooms.emit('nextcalibration', data);
 					} else {
 						//if there's no other user, calibration stops for now
-						// console.log('no one left to calibrate');
+						 console.log('no one left to calibrate');
 					}
 					break;
 				}

@@ -54,7 +54,7 @@ body {
 
 /*-- Start debug classes --*/
 	
-	.id-box {
+	.id-box .user-id {
 		color: #ccc;
 	}
 	

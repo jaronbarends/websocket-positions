@@ -92,6 +92,34 @@
 		$user.find('.avatar')
 			.css(css)
 	};
+
+
+	/**
+	* remove a user from the map
+	* @returns {undefined}
+	*/
+	var removeUser = function(user) {
+		if (user !== null) {
+			var id = user.id,
+				$user = $('#'+id);
+
+			if (id === sgUser.id) {
+				$sgYou.addClass('user--unjoined user--has-unknown-position')
+					.removeAttr('style')
+					.find('.avatar')
+					.removeAttr('style');
+			} else {
+				$user.addClass('user--is-leaving');
+
+				setTimeout(function() {
+						$user.remove();
+				}, 500);
+			}
+
+			//console.log('map: user ', user.username, 'left');
+		}
+	};
+	
 	
 
 
@@ -105,6 +133,30 @@
 		var newUser = getLatestUser();
 		//console.log('new user '+newUser.username+' has just joined');
 		createUser(newUser);
+	};
+
+
+	/**
+	* handle user leaving 
+	* @param {object} data {removedUser, users}
+	* @returns {undefined}
+	*/
+	var userLeftHandler = function(data) {
+		//console.log('left:', data);
+		var removedUser = data.removedUser;
+		removeUser(data.removedUser);
+		sgUsers = data.users;
+	};
+
+
+	/**
+	* handle user disconnecting altoghether
+	* user leaving room will be handled first by userLeftHandler
+	* @param {object} data {removedUser, users}
+	* @returns {undefined}
+	*/
+	var userDisconnectHandler = function(data) {
+		//console.log('disconnect:', data);
 	};
 
 
@@ -169,7 +221,8 @@
 		io.on('joined', joinedHandler);
 		io.on('newuser', newUserHandler);
 		io.on('updateposition', updatepositionHandler);
-		//io.on('disconnect', userDisconnectHandler);
+		io.on('userleft', userLeftHandler);
+		io.on('disconnect', userDisconnectHandler);
 	};
 	
 

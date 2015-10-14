@@ -54,7 +54,10 @@
 	* @returns {undefined}
 	*/
 	var displayIdentifier = function() {
-		$('#id-box').find('.user-id').text(sgUser.username+' '+sgUser.id);
+		$('#id-box').find('.username')
+			.text(sgUser.username)
+			.end()
+			.find('.user-id').text(sgUser.id);
 	};
 
 	/**
@@ -223,7 +226,24 @@
 			var $form = $(e.currentTarget);
 			sgUser.username = $form.find('[name="username"]').val() || sgUser.username;
 
-			joinRoom();
+			io.emit('join', sgUser);
+		});
+	};
+
+
+	/**
+	* initialize the login form
+	* @returns {undefined}
+	*/
+	var initLogoutForm = function() {
+		$('#logout-form').on('submit', function(e) {
+			e.preventDefault();
+
+			io.emit('leave', sgUser);
+
+			$('#login-form').show();
+			$('#logout-form').hide();
+			$('#calibration-box').hide();
 		});
 	};
 	
@@ -236,6 +256,7 @@
 	var joinedHandler = function(users) {
 		//this remote has been joined the room
 		$('#login-form').hide();
+		$('#logout-form').show();
 		sgUsers = users;
 		sgUser = getLatestUser();
 
@@ -261,11 +282,28 @@
 
 
 	/**
-	* handle user disconnecting 
+	* handle user leaving 
+	* @param {object} data {removedUser, users}
 	* @returns {undefined}
 	*/
-	var userDisconnectHandler = function() {
-		
+	var userLeftHandler = function(data) {
+		//console.log('left:', data);
+		var removedUser = data.removedUser;
+		if (removedUser !== null) {
+			//console.log('posaware: user ', removedUser.username, 'left');
+		}
+		sgUsers = data.users;
+	};
+
+
+	/**
+	* handle user disconnecting altoghether
+	* user leaving room will be handled first by userLeftHandler
+	* @param {object} data {removedUser, users}
+	* @returns {undefined}
+	*/
+	var userDisconnectHandler = function(data) {
+		//console.log('disconnect:', data);
 	};
 
 
@@ -291,18 +329,10 @@
 	var initSocketListeners = function() {
 		io.on('joined', joinedHandler);
 		io.on('newuser', newUserHandler);
+		io.on('userleft', userLeftHandler);
 		io.on('disconnect', userDisconnectHandler);
 		io.on('updateusers', updateusersHandler);
 		io.on('updateposition', updatepositionHandler);
-	};
-
-
-	/**
-	* send event to server to request entry to room
-	* @returns {undefined}
-	*/
-	var joinRoom = function() {
-		io.emit('join', sgUser);
 	};
 
 
@@ -404,7 +434,7 @@
 		}
 		angle = rebase(angle);// -180/180
 
-		log('angle:'+angle+'<br>'+otherUserId);
+		// log('angle:'+angle+'<br>'+otherUserId);
 
 
 		//store current angle and id of other user
@@ -447,6 +477,7 @@
 		initSocketListeners();
 		initDeviceOrientation();
 		initLoginForm();
+		initLogoutForm();
 		initCalibrationForm();
 	};
 

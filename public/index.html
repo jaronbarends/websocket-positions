@@ -26,7 +26,7 @@
 		<div id="logwin"></div>
 
 		<div id="id-box" class="id-box">
-			user id: <span class="user-id"></span>
+			<span class="username"></span> <span class="user-id"></span>
 		</div>
 
 		<div id="user-map-container" class="user-map-container">
@@ -46,10 +46,14 @@
 				<input type="submit" value="Go">
 			</form>
 
+			<form id="logout-form" class="u-hidden" action="">
+				<input type="submit" value="Leave">
+			</form>
+
 			<div id="calibration-box" class="u-hidden">
 				<h2>point your device at <span class="calibrate-user-name">...</span></h2>
 
-				<form id="dummy-calibration-form" action="">
+				<form id="dummy-calibration-form" class="dummy-calibration-form" action="">
 					<input type="hidden" name="calibrate-user-id">
 					<input type="text" id="dummy-angle" class="few-chars" name="dummy-angle" value="">
 					<input type="submit" value="use angle">
