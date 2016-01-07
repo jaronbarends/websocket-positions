@@ -13,7 +13,7 @@
 	* @returns {undefined}
 	*/
 	var connectionreadyHandler = function(data) {
-		console.log('ready:',data);
+		// console.log('ready:',data);
 		var newData = {
 			io: io,
 			users: data.users

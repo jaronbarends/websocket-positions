@@ -191,7 +191,7 @@ var sgRooms,
 	var joinHandler = function(socket, user) {
 		socket.join(sgRoomname);
 
-		console.log('join:', user);
+		// console.log('join:', user);
 
 		//add stuff server manages to user
 		var idx = sgUsers.length;//index in sgUsers array for easy reference
@@ -515,9 +515,9 @@ var sgRooms,
 		};
 
 		if (user.idx === 0) {
-			console.log('\n-----------------------------------------------\n');
+			// console.log('\n-----------------------------------------------\n');
 		}
-		console.log(position);
+		// console.log(position);
 
 		return position;
 	};
@@ -634,7 +634,7 @@ var sgRooms,
 	* @param {object} user The user that has just calibrated
 	*/
 	var newcalibrationHandler = function(socket, user) {
-		console.log('newcalibrationHandler');
+		// console.log('newcalibrationHandler');
 		var idx = user.idx,
 			done = false,
 			canBePositioned = false;
@@ -708,12 +708,12 @@ var sgRooms,
 	var nextCalibration = function() {
 
 		var len = sgUsers.length;
-		console.log('nextCalibration; num users:', len);
+		// console.log('nextCalibration; num users:', len);
 		if (len > 1) {
 			//nothing to calibrate when there's only one user
 			for (var i=0; i<len; i++) {
 				var user = sgUsers[i];
-				console.log('user',i,' calibrated:',user.hasCalibrated);
+				// console.log('user',i,' calibrated:',user.hasCalibrated);
 				if (!user.hasCalibrated) {
 					var id = user.id,
 						otherUser = getUserToCalibrateWith(user),
@@ -722,16 +722,16 @@ var sgRooms,
 							otherUser: otherUser
 						};
 
-					console.log('nextCalibration; up:', user.idx);
+					// console.log('nextCalibration; up:', user.idx);
 
 					if (otherUser) {
-						console.log('nextCalibration; up:', user.idx, '('+user.idx+'>'+otherUser.idx+')');
-						console.log('next up:', user.username);
-						console.log('otherUser:', otherUser.idx);
+						// console.log('nextCalibration; up:', user.idx, '('+user.idx+'>'+otherUser.idx+')');
+						// console.log('next up:', user.username);
+						// console.log('otherUser:', otherUser.idx);
 						sgRooms.emit('nextcalibration', data);
 					} else {
 						//if there's no other user, calibration stops for now
-						console.log('no one left to calibrate');
+						// console.log('no one left to calibrate');
 					}
 					break;
 				}

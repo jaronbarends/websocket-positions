@@ -123,10 +123,10 @@
 		if (data.changedUser.idx === sgUser.idx) {
 			//this is the user that was changed
 			sgUser = data.changedUser;
-			console.log('update users - I was changed');
+			// console.log('update users - I was changed');
 		}
 		//console.log('update users; changed: idx'+data.changedUser.idx, sgUsers);
-		console.log('update users: ', sgUsers);
+		// console.log('update users: ', sgUsers);
 	};
 	
 
@@ -313,9 +313,12 @@
 	*/
 	var updatepositionHandler = function(data) {
 		sgPositions = data.positions;
-		console.log('updatepositionHandler:', data);
+		// console.log('updatepositionHandler:', data);
 		//console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
 		//calculate the angles to all users
+		if (sgUser.idx === data.changedUser.idx) {
+			console.log('I can now be positioned');
+		}
 	};
 	
 	
@@ -391,7 +394,7 @@
 		];
 		var angle = dummyDeviceAngles[sgUser.idx][sgUser.calibrations];
 
-		console.log(angle, sgUser.idx, sgUser.calibrations);
+		// console.log(angle, sgUser.idx, sgUser.calibrations);
 
 		$('#dummy-angle').val(angle);
 	};
@@ -403,7 +406,7 @@
 	* @returns {undefined}
 	*/
 	var showCalibration = function(otherUser) {
-		console.log('showCalibration; user:', sgUser);
+		// console.log('showCalibration; user:', sgUser);
 		$sgCalibrationBox.find('.calibrate-user-name')
 				.text(otherUser.username)
 			.end()
@@ -418,7 +421,7 @@
 
 	/**
 	* handle clicking calibration button
-	* so a user has done a calibration
+	* so this user has done a calibration
 	* @returns {undefined}
 	*/
 	var calibrationHandler = function(evt) {
@@ -430,12 +433,11 @@
 		if (evt.currentTarget.id === 'dummy-calibration-form') {
 			//dummy calibration was used
 			angle = $('#dummy-angle').val();
-			console.log('dummy angle:', angle);
+			// console.log('dummy angle:', angle);
 		}
 		angle = rebase(angle);// -180/180
 
 		// log('angle:'+angle+'<br>'+otherUserId);
-
 
 		//store current angle and id of other user
 		var	otherUserId = $(evt.currentTarget).find('[name="calibrate-user-id"]').val(),
@@ -446,9 +448,6 @@
 			};
 
 		sgUser.angles.push(currCalibration);
-
-		//update number of calibrations and see if we're done for this user
-		//sgUser.calibrations++;
 
 		//send data back to server
 		io.emit('newcalibration', sgUser);
