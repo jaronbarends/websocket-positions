@@ -18,7 +18,7 @@
 			username: '',
 			role: 'remote',
 			color: '',
-			idx: 0,//the index of this user in the users array
+			idx: null,//the index of this user in the users array
 			hasJoined: false,
 			calibrations: 0,//number of calibrations this user has made
 			hasCalibrated: false,

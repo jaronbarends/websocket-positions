@@ -14,7 +14,7 @@ The functionalities have been seperated as much as possible into different javas
 
 ###socket-server.js
 
-This is the server you run to serve the pages: `node socket-server`
+This is the server you run to serve the pages: `node socket-position-server`
 
 The socket-server serves files in the _public_ directory and handles traffic between sockets. Sockets can send events to the socket-server, and then you can add code to the server to handle that event. Mostly, you'll just want to pass it on. ? It may be an idea to create a special type of event that always gets passed through, containing some identifier?
 
