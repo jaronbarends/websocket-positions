@@ -33,8 +33,8 @@
 		},
 		sgUsers = [],//array of users, in order of joining
 		// sgRefsAngles = [],//array of angles to users relative to ref, in order of direction
-		sgAnglesToOtherUsers = [],// array of angles to other users in *this device's* coordinate system
-		sgAnglesToOtherUsersOrdered = [],// same as sgAnglesToOtherUsers, but ordered by angle
+		sgAnglesToOtherUsersOnGrid = [],// array of angles to other users in reference grid's coordinate system
+		sgAnglesToOtherUsers = [],// array of angles to other users in *this device's* coordinate system, ordered by angle
 		sgPositions = [],//array of every positioned user's position in the reference grid
 		sgReferenceLength = 100;// reference length for position calculations; this is the length between idx0 and idx1
 
@@ -309,6 +309,74 @@
 	};
 
 
+	/**
+	* 
+	* @returns {undefined}
+	*/
+	var sortAngleArray = function(arr) {
+		if (!arr) {
+			arr = [
+				{
+					toIdx: 0,
+					angle: 20
+				},
+				{
+					toIdx: 1,
+					angle: -38
+				},
+				{
+					toIdx: 2,
+					angle: -39
+				},
+				{
+					toIdx: 3,
+					angle: 210
+				},
+				{
+					toIdx: 4,
+					angle: 170
+				}
+			];
+		}
+		console.log('voor', arr);
+		arr.sort(function(a,b) {
+			return (a.angle - b.angle);
+		});
+		console.log('na',arr);
+	};
+	
+
+
+	/**
+	* correct the angles in sgAnglesToOtherUsersOnGrid with this device's orientation
+	* so we get the angles in this device's coordinate system
+	* @returns {undefined}
+	*/
+	var correctAnglesForDevice = function() {
+		//sgAnglesToOtherUsers
+		for (var i=0, len=sgAnglesToOtherUsersOnGrid.length; i<len; i++) {
+			var oldAngleObj = sgAnglesToOtherUsersOnGrid[i],
+				angleOnGrid = oldAngleObj.angle,
+				toIdx = oldAngleObj.toIdx;
+
+			var angleForDevice = angleOnGrid + sgUser.angleToGrid;
+			angleForDevice = rebaseTo360(angleForDevice);
+
+			var angleObj = {
+				toIdx: toIdx,
+				angle: angleForDevice
+			};
+
+			sgAnglesToOtherUsers.push(angleObj);
+		}
+		//now sort the array by angle
+		sgAnglesToOtherUsers.sort(function(a,b) {
+			return (a.angle - b.angle);
+		});
+	};
+	
+
+
 
 	/**
 	* 
@@ -317,6 +385,9 @@
 	var calculateAnglesToOtherUsers = function() {
 		var myX = sgUser.position.x,
 			myY = sgUser.position.y;
+
+		sgAnglesToOtherUsersOnGrid = [];// reset the array
+		sgAnglesToOtherUsers = [];// reset the array
 
 		//loop through all positioned users
 		for (var idx=0, len=sgPositions.length; idx<len; idx++) {
@@ -329,11 +400,19 @@
 				dx = otherX - myX,
 				dy = otherY - myY;
 
-			var radians = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
-				degrees = radiansToDegrees(radians);
+			//calculate the angle on the reference grid
+			var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+				degreesOnGrid = radiansToDegrees(radiansOnGrid),
+				angleObj = {
+					toIdx: idx,
+					angle: degreesOnGrid
+				};
 
+			sgAnglesToOtherUsersOnGrid.push(angleObj);
 			console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degrees);
 		}
+
+		correctAnglesForDevice();
 	};
 	
 
@@ -383,7 +462,7 @@
 	* @param {number} a The angle to recalculate rotation angle
 	* @returns {number} The recalculated angle
 	*/
-	var rebase = function(a) {
+	var rebaseTo180 = function(a) {
 		a = a%360;//reduce anything > 360
 		if (a > 180) {
 			a -= 360;
@@ -393,6 +472,20 @@
 
 		return a;
 	};
+
+
+	/**
+	* recalculate angles to change from -180 - 180 range to 0 - 360
+	* @param {number} a The angle to recalculate rotation angle
+	* @returns {number} The recalculated angle
+	*/
+	var rebaseTo360 = function(a) {
+		a += 360;
+		a = a%360;
+
+		return a;
+	};
+	
 
 
 	/**
@@ -485,7 +578,7 @@
 			angle = $('#dummy-angle').val();
 			// console.log('dummy angle:', angle);
 		}
-		angle = rebase(angle);// -180/180
+		angle = rebaseTo180(angle);// -180/180
 
 		// log('angle:'+angle+'<br>'+otherUserId);
 
@@ -493,7 +586,7 @@
 		var	otherUserId = $(evt.currentTarget).find('[name="calibrate-user-id"]').val(),
 			currCalibration = {
 				fromId: sgUser.id,
-				toId: otherUserId,
+				toId: otherUserId,// wouldn't it be more logical to store idx?
 				angle: angle
 			};
 
@@ -581,6 +674,8 @@
 	};
 
 	$(document).ready(init);
+
+	// sortAngleArray();
 
 
 })(jQuery);

@@ -278,7 +278,7 @@ var sgRooms,
 	* @param {number} a The angle to recalculate rotation angle
 	* @returns {number} The recalculated angle
 	*/
-	var rebase = function(a) {
+	var rebaseTo180 = function(a) {
 		a = a%360;//reduce anything > 360
 		if (a > 180) {
 			a -= 360;
@@ -347,9 +347,9 @@ var sgRooms,
 		// console.log('convertToGridAngle - angleToGrid:', angleToGrid);
 		// console.log('convertToGridAngle - gridAngle:', gridAngle);
 
-		gridAngle = rebase(gridAngle);
+		gridAngle = rebaseTo180(gridAngle);
 
-		// console.log('convertToGridAngle - rebase gridAngle:', gridAngle);
+		// console.log('convertToGridAngle - rebaseTo180 gridAngle:', gridAngle);
 			
 		return gridAngle;
 	};
@@ -384,7 +384,7 @@ var sgRooms,
 			// console.log('angleToGrid for user', user.idx);
 		}
 
-		angleToGrid = rebase(angleToGrid);
+		angleToGrid = rebaseTo180(angleToGrid);
 		// console.log('rebased angleToGrid for user', user.idx,':', angleToGrid);
 
 		return angleToGrid;
@@ -705,6 +705,8 @@ var sgRooms,
 				changedUser: user,
 				positions: sgPositions
 			};
+
+			//here we can recalculate all users' angles to their peers
 			sgRooms.emit('updateposition', positionData);
 			//emitUsersChange(user);
 		}
