@@ -13,27 +13,29 @@
 
 	// define semi-global variables (vars that are "global" in this file's scope) and prefix them
 	// with sg so we can easily distinguish them from "normal" vars
-	var sgUser = {
+	var sgUserDefault = {
 			id: '',
 			username: '',
 			role: 'remote',
 			color: '',
 			idx: null,//the index of this user in the users array
-			hasJoined: false,
 			calibrations: 0,//number of calibrations this user has made
 			hasCalibrated: false,
 			isRef: false,//flag indicating if this device is the room's central point of reference
-			position: {x:0, y:0},//this user's position
+			position: null,//this user's position {x:0, y:0}
 			isPositioned: false,
-			angles: [],//object containing the angles of this user to other users
+			angles: [],//object containing the angles of this user to other users he has calibrated with
 			angleToGrid: null//angle to the reference grid
 		},
+		sgUser,
 		sgDevice = {
 			orientation: {}
 		},
 		sgUsers = [],//array of users, in order of joining
-		sgRefsAngles = [],//array of angles to users relative to ref, in order of direction
-		sgPositions = [],
+		// sgRefsAngles = [],//array of angles to users relative to ref, in order of direction
+		sgAnglesToOtherUsers = [],// array of angles to other users in *this device's* coordinate system
+		sgAnglesToOtherUsersOrdered = [],// same as sgAnglesToOtherUsers, but ordered by angle
+		sgPositions = [],//array of every positioned user's position in the reference grid
 		sgReferenceLength = 100;// reference length for position calculations; this is the length between idx0 and idx1
 
 	var $sgCalibrationBox = $('#calibration-box');
@@ -290,7 +292,7 @@
 		//console.log('left:', data);
 		var removedUser = data.removedUser;
 		if (removedUser !== null) {
-			//console.log('posaware: user ', removedUser.username, 'left');
+			//console.log('posaware.js: user ', removedUser.username, 'left');
 		}
 		sgUsers = data.users;
 	};
@@ -307,17 +309,54 @@
 	};
 
 
+
+	/**
+	* 
+	* @returns {undefined}
+	*/
+	var calculateAnglesToOtherUsers = function() {
+		var myX = sgUser.position.x,
+			myY = sgUser.position.y;
+
+		//loop through all positioned users
+		for (var idx=0, len=sgPositions.length; idx<len; idx++) {
+			if (idx === sgUser.idx) {
+				// it's this user itself, no need to calculate position
+				continue;
+			}
+			var otherX = sgPositions[idx].x,
+				otherY = sgPositions[idx].y,
+				dx = otherX - myX,
+				dy = otherY - myY;
+
+			var radians = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+				degrees = radiansToDegrees(radians);
+
+			console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degrees);
+		}
+	};
+	
+
+
 	/**
 	* a new user's position has been calculated
 	* @returns {undefined}
 	*/
 	var updatepositionHandler = function(data) {
 		sgPositions = data.positions;
+		console.log(data);
+		console.log(sgPositions);
 		// console.log('updatepositionHandler:', data);
 		//console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
 		//calculate the angles to all users
 		if (sgUser.idx === data.changedUser.idx) {
-			console.log('I can now be positioned');
+			// console.log('I can now be positioned');
+			// this user has just become aware of its position
+		}
+
+		// if this user already has a position, calculate angles to others
+		if (sgUser.position) {
+			calculateAnglesToOtherUsers();
 		}
 	};
 	
@@ -364,6 +403,17 @@
 	var degreesToRadians = function(degrees) {
 		var radians = 2*Math.PI * degrees/360;
 		return radians;
+	};
+
+
+	/**
+	* parse angle in radians to degrees
+	* @param {number} radians The angle in radians
+	* @returns {number} the angle in degrees
+	*/
+	var radiansToDegrees = function(radians) {
+		var degrees = 360*radians / (2*Math.PI);
+		return degrees;
 	};
 	
 
@@ -465,19 +515,44 @@
 
 
 	/**
-	* initialize the remote
+	* initialize the reset button
 	* @returns {undefined}
 	*/
-	var initRemote = function() {
+	var initResetButton = function() {
+		$('#reset-btn').on('click', function(e) {
+			e.preventDefault;
+			io.emit('reset');
+		})
+	};
+
+
+	/**
+	* create a user object for the current user
+	* @returns {undefined}
+	*/
+	var createCurrentUser = function() {
+		sgUser = $.extend({}, sgUserDefault);
 		sgUser.id = io.id;
 		setUserName();
 		displayIdentifier();
 		setUserColor();
+	};
+	
+	
+
+
+	/**
+	* initialize the remote
+	* @returns {undefined}
+	*/
+	var initRemote = function() {
+		createCurrentUser();
 		initSocketListeners();
 		initDeviceOrientation();
 		initLoginForm();
 		initLogoutForm();
 		initCalibrationForm();
+		initResetButton();
 	};
 
 

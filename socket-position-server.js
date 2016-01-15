@@ -82,6 +82,8 @@ var sgRooms,
 				updateusersHandler(socket, data);
 			});
 
+			socket.on('reset', reset);
+
 			//set handler for events that only have to be passsed on to all sockets
 			socket.on('passthrough', passThroughHandler);
 
@@ -241,6 +243,17 @@ var sgRooms,
 		};	
 		sgRooms.emit('updateusers', data);
 	};
+
+
+	/**
+	* 
+	* @returns {undefined}
+	*/
+	var reset = function() {
+		console.log('reset');
+		// io.sockets.in(sgRoomname).leave(sgRoomname);
+	};
+	
 	
 
 //-- End user management functions --
@@ -680,6 +693,7 @@ var sgRooms,
 			user.position = position;
 			user.isPositioned = true;
 			sgPositions.push(position);
+			// console.log('pushing position', sgPositions.length, sgPositions);
 
 			//update the object which has every user's angles to all other users
 			//updateAngles();
