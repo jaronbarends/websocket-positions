@@ -20,12 +20,14 @@
 			color: '',
 			idx: null,//the index of this user in the users array
 			calibrations: 0,//number of calibrations this user has made
+			calibrationAngles: [],//object containing the angles of this user to other users he has calibrated with
 			hasCalibrated: false,
 			isRef: false,//flag indicating if this device is the room's central point of reference
 			position: null,//this user's position {x:0, y:0}
 			isPositioned: false,
-			angles: [],//object containing the angles of this user to other users he has calibrated with
-			angleToGrid: null//angle to the reference grid
+			angleToGrid: null,//angle to the reference grid
+			anglesToOtherUsersOnGrid: [],// array of angles to other users in reference grid's coordinate system
+			anglesToOtherUsers: []// array of angles to other users in *this device's* coordinate system, ordered by angle
 		},
 		sgUser,
 		sgDevice = {
@@ -36,6 +38,7 @@
 		sgAnglesToOtherUsersOnGrid = [],// array of angles to other users in reference grid's coordinate system
 		sgAnglesToOtherUsers = [],// array of angles to other users in *this device's* coordinate system, ordered by angle
 		sgPositions = [],//array of every positioned user's position in the reference grid
+		sgMaxPointingDeviation = 30,// maximum deviation on either side from the registered angle to a user; you're pointing at a user when you point within (registeredAngle - sgMaxPointingDeviation and registeredAngle + sgMaxPointingDeviation)
 		sgReferenceLength = 100;// reference length for position calculations; this is the length between idx0 and idx1
 
 	var $sgCalibrationBox = $('#calibration-box');
@@ -130,32 +133,6 @@
 		//console.log('update users; changed: idx'+data.changedUser.idx, sgUsers);
 		// console.log('update users: ', sgUsers);
 	};
-	
-
-
-	/**
-	* change a property of the current user and send changed users object to server
-	* server stores the changed users object and sends object to sockets
-	* @returns {undefined}
-	*/
-	/*
-	var updateUser = function(prop, val) {
-		sgUser[prop] = val;
-		for (var i=0, len=sgUsers.length; i<len; i++) {
-			var currUser = sgUsers[i];
-			if (currUser.id === sgUser.id) {
-				sgUsers[i] = sgUser;
-				break;
-			}
-		}
-
-		var data = {
-			users: sgUsers,
-			changedUser: sgUser
-		}
-		io.emit('updateusers', data);
-	};
-	*/
 	
 
 
@@ -307,113 +284,74 @@
 	var userDisconnectHandler = function(data) {
 		//console.log('disconnect:', data);
 	};
-
-
-	/**
-	* 
-	* @returns {undefined}
-	*/
-	var sortAngleArray = function(arr) {
-		if (!arr) {
-			arr = [
-				{
-					toIdx: 0,
-					angle: 20
-				},
-				{
-					toIdx: 1,
-					angle: -38
-				},
-				{
-					toIdx: 2,
-					angle: -39
-				},
-				{
-					toIdx: 3,
-					angle: 210
-				},
-				{
-					toIdx: 4,
-					angle: 170
-				}
-			];
-		}
-		console.log('voor', arr);
-		arr.sort(function(a,b) {
-			return (a.angle - b.angle);
-		});
-		console.log('na',arr);
-	};
 	
 
 
-	/**
-	* correct the angles in sgAnglesToOtherUsersOnGrid with this device's orientation
-	* so we get the angles in this device's coordinate system
-	* @returns {undefined}
-	*/
-	var correctAnglesForDevice = function() {
-		//sgAnglesToOtherUsers
-		for (var i=0, len=sgAnglesToOtherUsersOnGrid.length; i<len; i++) {
-			var oldAngleObj = sgAnglesToOtherUsersOnGrid[i],
-				angleOnGrid = oldAngleObj.angle,
-				toIdx = oldAngleObj.toIdx;
+	// /**
+	// * correct the angles in sgAnglesToOtherUsersOnGrid with this device's orientation
+	// * so we get the angles in this device's coordinate system
+	// * @returns {undefined}
+	// */
+	// var correctAnglesForDevice = function() {
+	// 	//sgAnglesToOtherUsers
+	// 	for (var i=0, len=sgAnglesToOtherUsersOnGrid.length; i<len; i++) {
+	// 		var oldAngleObj = sgAnglesToOtherUsersOnGrid[i],
+	// 			angleOnGrid = oldAngleObj.angle,
+	// 			toIdx = oldAngleObj.toIdx;
 
-			var angleForDevice = angleOnGrid + sgUser.angleToGrid;
-			angleForDevice = rebaseTo360(angleForDevice);
+	// 		var angleForDevice = angleOnGrid + sgUser.angleToGrid;
+	// 		angleForDevice = rebaseTo360(angleForDevice);
 
-			var angleObj = {
-				toIdx: toIdx,
-				angle: angleForDevice
-			};
+	// 		var angleObj = {
+	// 			toIdx: toIdx,
+	// 			angle: angleForDevice
+	// 		};
 
-			sgAnglesToOtherUsers.push(angleObj);
-		}
-		//now sort the array by angle
-		sgAnglesToOtherUsers.sort(function(a,b) {
-			return (a.angle - b.angle);
-		});
-	};
+	// 		sgAnglesToOtherUsers.push(angleObj);
+	// 	}
+	// 	//now sort the array by angle
+	// 	sgAnglesToOtherUsers.sort(function(a,b) {
+	// 		return (a.angle - b.angle);
+	// 	});
+	// };
 	
 
+	// /**
+	// * 
+	// * @returns {undefined}
+	// */
+	// var calculateAnglesToOtherUsers = function() {
+	// 	var myX = sgUser.position.x,
+	// 		myY = sgUser.position.y;
 
+	// 	sgAnglesToOtherUsersOnGrid = [];// reset the array
+	// 	sgAnglesToOtherUsers = [];// reset the array
 
-	/**
-	* 
-	* @returns {undefined}
-	*/
-	var calculateAnglesToOtherUsers = function() {
-		var myX = sgUser.position.x,
-			myY = sgUser.position.y;
+	// 	//loop through all positioned users
+	// 	for (var idx=0, len=sgPositions.length; idx<len; idx++) {
+	// 		if (idx === sgUser.idx) {
+	// 			// it's this user itself, no need to calculate position
+	// 			continue;
+	// 		}
+	// 		var otherX = sgPositions[idx].x,
+	// 			otherY = sgPositions[idx].y,
+	// 			dx = otherX - myX,
+	// 			dy = otherY - myY;
 
-		sgAnglesToOtherUsersOnGrid = [];// reset the array
-		sgAnglesToOtherUsers = [];// reset the array
+	// 		//calculate the angle on the reference grid
+	// 		var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+	// 			degreesOnGrid = radiansToDegrees(radiansOnGrid),
+	// 			angleObj = {
+	// 				toIdx: idx,
+	// 				angle: degreesOnGrid
+	// 			};
 
-		//loop through all positioned users
-		for (var idx=0, len=sgPositions.length; idx<len; idx++) {
-			if (idx === sgUser.idx) {
-				// it's this user itself, no need to calculate position
-				continue;
-			}
-			var otherX = sgPositions[idx].x,
-				otherY = sgPositions[idx].y,
-				dx = otherX - myX,
-				dy = otherY - myY;
+	// 		sgAnglesToOtherUsersOnGrid.push(angleObj);
+	// 		console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degreesOnGrid);
+	// 	}
 
-			//calculate the angle on the reference grid
-			var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
-				degreesOnGrid = radiansToDegrees(radiansOnGrid),
-				angleObj = {
-					toIdx: idx,
-					angle: degreesOnGrid
-				};
-
-			sgAnglesToOtherUsersOnGrid.push(angleObj);
-			console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degrees);
-		}
-
-		correctAnglesForDevice();
-	};
+	// 	correctAnglesForDevice();
+	// };
 	
 
 
@@ -435,7 +373,7 @@
 
 		// if this user already has a position, calculate angles to others
 		if (sgUser.position) {
-			calculateAnglesToOtherUsers();
+			// calculateAnglesToOtherUsers();
 		}
 	};
 	
@@ -590,7 +528,7 @@
 				angle: angle
 			};
 
-		sgUser.angles.push(currCalibration);
+		sgUser.calibrationAngles.push(currCalibration);
 
 		//send data back to server
 		io.emit('newcalibration', sgUser);

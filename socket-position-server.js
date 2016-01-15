@@ -19,10 +19,7 @@ var sgRooms,
 	sgRoomname = 'defaultRoom',//we'll only be using one room
 	sgUsers = [],
 	sgPositions = [],
-	sgAngles = [],// array with for every user an array containing its angles to all other users
-	sgMaxPointingDeviation = 30,// maximum deviation on either side from the registered angle to a user; you're pointing at a user when you point within (registeredAngle - sgMaxPointingDeviation and registeredAngle + sgMaxPointingDeviation)
 	sgReferenceLength = 100;
-
 
 
 //-- Start basic setup --
@@ -274,6 +271,17 @@ var sgRooms,
 
 
 	/**
+	* parse angle in radians to degrees
+	* @param {number} radians The angle in radians
+	* @returns {number} the angle in degrees
+	*/
+	var radiansToDegrees = function(radians) {
+		var degrees = 360*radians / (2*Math.PI);
+		return degrees;
+	};
+
+
+	/**
 	* recalculate angles to change from 0 - 360 range to -180 - 180 
 	* @param {number} a The angle to recalculate rotation angle
 	* @returns {number} The recalculated angle
@@ -285,6 +293,19 @@ var sgRooms,
 		} else if (a < -180) {
 			a += 360;
 		}
+
+		return a;
+	};
+
+
+	/**
+	* recalculate angles to change from -180 - 180 range to 0 - 360
+	* @param {number} a The angle to recalculate rotation angle
+	* @returns {number} The recalculated angle
+	*/
+	var rebaseTo360 = function(a) {
+		a += 360;
+		a = a%360;
 
 		return a;
 	};
@@ -353,7 +374,6 @@ var sgRooms,
 			
 		return gridAngle;
 	};
-	
 
 
 	/**
@@ -397,7 +417,7 @@ var sgRooms,
 	* @returns {number} the angle
 	*/
 	var getLastUserAngle = function(user) {
-		var angle = user.angles[user.angles.length-1].angle;
+		var angle = user.calibrationAngles[user.calibrationAngles.length-1].angle;
 
 		return angle;
 	};
@@ -420,16 +440,87 @@ var sgRooms,
 	};
 	
 	
-	
-	
+	/**
+	* correct the angles in user.anglesToOtherUsersOnGrid with this device's orientation
+	* so we get the angles in this device's coordinate system
+	* @param {object} user The user whose angles we want to calculate
+	* @returns {undefined}
+	*/
+	var correctAnglesForDevice = function(user) {
+		for (var i=0, len=user.anglesToOtherUsersOnGrid.length; i<len; i++) {
+			var oldAngleObj = user.anglesToOtherUsersOnGrid[i],
+				angleOnGrid = oldAngleObj.angle,
+				toIdx = oldAngleObj.toIdx;
+
+			var angleForDevice = angleOnGrid + user.angleToGrid;
+			angleForDevice = rebaseTo360(angleForDevice);
+
+			var angleObj = {
+				toIdx: toIdx,
+				angle: angleForDevice
+			};
+
+			user.anglesToOtherUsers.push(angleObj);
+		}
+		//now sort the array by angle
+		user.anglesToOtherUsers.sort(function(a,b) {
+			return (a.angle - b.angle);
+		});
+	};
 
 
 	/**
-	* update the object with all user's angles to all other users
+	* calculate a single user's angles to all other users
+	* @param {object} user The user whose angles we want to calculate
 	* @returns {undefined}
 	*/
-	var updateAngles = function() {
-		
+	var calculateSingleUsersAngleToOtherUsers = function(user) {
+		var myX = user.position.x,
+			myY = user.position.y;
+
+		user.anglesToOtherUsersOnGrid = [];// reset the array
+		user.anglesToOtherUsers = [];// reset the array
+
+		//loop through all positioned users
+		for (var idx=0, len=sgPositions.length; idx<len; idx++) {
+			if (idx === user.idx) {
+				// it's this user itself, no need to calculate position
+				continue;
+			}
+			var otherX = sgPositions[idx].x,
+				otherY = sgPositions[idx].y,
+				dx = otherX - myX,
+				dy = otherY - myY;
+
+			//calculate the angle on the reference grid
+			var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+				degreesOnGrid = radiansToDegrees(radiansOnGrid),
+				angleObj = {
+					toIdx: idx,
+					angle: degreesOnGrid
+				};
+
+			user.anglesToOtherUsersOnGrid.push(angleObj);
+			// console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degreesOnGrid);
+		}
+
+		correctAnglesForDevice(user);
+	};
+	
+	
+
+	/**
+	* for every user, calculate the angles to all other users
+	* @returns {undefined}
+	*/
+	var calculateAllUsersAnglesToOtherUsers = function() {
+		for (var idx=0, len=sgUsers.length; idx<len; idx++) {
+			var user = sgUsers[idx];
+
+			if (user.isPositioned) {
+				calculateSingleUsersAngleToOtherUsers(user);
+			}
+		}
 	};
 	
 
@@ -464,7 +555,7 @@ var sgRooms,
 				userM = sgUsers[m];
 			
 			// determine angle from  A to N
-			var na = userN.angles[0].angle,
+			var na = userN.calibrationAngles[0].angle,
 				naGrid = convertToGridAngle(na, userN),
 				anGrid = getOtherUserGridAngle(naGrid);
 
@@ -534,69 +625,7 @@ var sgRooms,
 
 		return position;
 	};
-	
 
-	/**
-	* calculate a user's position within the grid's coordinate system
-	* @param {user object} user The user whose position to calculate
-	* @returns {object} The users object position {x:x, y:y}
-	*/
-	var getCalculatedPosition_bak = function(user) {
-		//console.log('calculate pos for user', user.idx);
-		var x,
-			y;
-			
-		if (user.idx === 0) {
-			x = 0;
-			y = 0;
-		} else if (user.idx === 1) {
-			//put on default reference length
-			x = 0;
-			y = sgReferenceLength;
-		} else {
-			// for sake of this calculation:
-			// let's call the idx of the user to check n
-			// user calibrates with idx0 (nodeA)
-			// call idx0 node A, idx1 node B and the user we want to calculate node C.
-			// see the image in docs/calculations.png
-
-			//calculate angles bac, abc and acb
-			var nodeB = sgUsers[1],
-				ba = nodeB.angles[0].angle,//angle from B to A
-				bc = nodeB.angles[1].angle,//angle from B to C
-				abc = getAngle(ba, bc);
-			// console.log('ba:', ba, 'bc:', bc, 'abc:', abc);
-
-			var nodeC = user,
-				ca = nodeC.angles[0].angle,//angle from C to A
-				cb = nodeC.angles[1].angle,//angle from C to B
-				acb = getAngle(ca, cb);
-			// console.log('ca:', ca, 'cb:', cb, 'acb:', acb);
-
-			//TODO REPLACE BY ACTUAL VALUES
-			//abc = 60;
-			//acb = 40;
-
-			var bac = 180 - abc - acb,
-				bacRadians = degreesToRadians(bac);
-
-			var AB = sgReferenceLength,
-				baz = 90 - abc,
-				caz = bac - baz,
-				AC = AB*Math.cos(degreesToRadians(baz)) / Math.cos(degreesToRadians(caz));
-
-			x = AC*Math.sin(bacRadians);
-			y = AC*Math.cos(bacRadians);
-
-		}
-		
-		var position = {
-			x: x,
-			y: y
-		};
-
-		return position;
-	};	
 
 //-- End positions & angles --
 
@@ -652,8 +681,8 @@ var sgRooms,
 			done = false,
 			canBePositioned = false;
 
-		var angles = user.angles,
-			lastCalibration = angles[angles.length-1],
+		var calibrationAngles = user.calibrationAngles,
+			lastCalibration = calibrationAngles[calibrationAngles.length-1],
 			angle = lastCalibration.angle;
 
 		// console.log('calibration from ',idx, 'angle: ', angle);
@@ -696,8 +725,9 @@ var sgRooms,
 			// console.log('pushing position', sgPositions.length, sgPositions);
 
 			//update the object which has every user's angles to all other users
-			//updateAngles();
+			calculateAllUsersAnglesToOtherUsers();
 
+			// notify other users of change in this user
 			emitUsersChange(user);
 
 			var positionData = {
