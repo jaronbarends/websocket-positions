@@ -312,6 +312,19 @@
 		}
 
 	};
+
+
+	/**
+	* reset
+	* @returns {undefined}
+	*/
+	var resetHandler = function(e) {
+		console.log('reset called');
+		setTimeout(function() {
+			document.location.reload();
+		}, 500);
+	};
+	
 	
 	
 
@@ -326,7 +339,7 @@
 		io.on('newuser', newUserHandler);
 		io.on('userleft', userLeftHandler);
 		io.on('disconnect', userDisconnectHandler);
-		io.on('reset', leaveHandler);
+		io.on('reset', resetHandler);
 		io.on('updateusers', updateusersHandler);
 		io.on('updateposition', updatepositionHandler);
 	};

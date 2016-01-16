@@ -246,8 +246,13 @@ var sgRooms,
 	* @returns {undefined}
 	*/
 	var reset = function() {
-		// io.sockets.in(sgRoomname).leave(sgRoomname);
-		sgRooms.emit('reset')
+		sgRooms.emit('reset');
+		try {
+			io.sockets.in(sgRoomname).leave(sgRoomname);
+		} catch(e) {
+		}
+		sgUsers = [];
+		console.log('-- reset --');
 	};
 	
 	
@@ -479,29 +484,6 @@ var sgRooms,
 
 		user.anglesToOtherUsersOnGrid = [];// reset the array
 		user.anglesToOtherUsers = [];// reset the array
-
-		// //loop through all positioned users
-		// for (var idx=0, len=sgPositions.length; idx<len; idx++) {
-		// 	if (idx === user.idx) {
-		// 		// it's this user itself, no need to calculate position
-		// 		continue;
-		// 	}
-		// 	var otherX = sgPositions[idx].x,
-		// 		otherY = sgPositions[idx].y,
-		// 		dx = otherX - myX,
-		// 		dy = otherY - myY;
-
-		// 	//calculate the angle on the reference grid
-		// 	var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
-		// 		degreesOnGrid = radiansToDegrees(radiansOnGrid),
-		// 		angleObj = {
-		// 			toId: id,
-		// 			angle: degreesOnGrid
-		// 		};
-
-		// 	user.anglesToOtherUsersOnGrid.push(angleObj);
-		// 	// console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degreesOnGrid);
-		// }
 
 		//loop through all positioned users
 		for (var i=0, len=sgUsers.length; i<len; i++) {
