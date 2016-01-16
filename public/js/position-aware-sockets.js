@@ -37,7 +37,7 @@
 		// sgRefsAngles = [],//array of angles to users relative to ref, in order of direction
 		sgAnglesToOtherUsersOnGrid = [],// array of angles to other users in reference grid's coordinate system
 		sgAnglesToOtherUsers = [],// array of angles to other users in *this device's* coordinate system, ordered by angle
-		sgPositions = [],//array of every positioned user's position in the reference grid
+		// sgPositions = [],//array of every positioned user's position in the reference grid
 		sgMaxPointingDeviation = 30,// maximum deviation on either side from the registered angle to a user; you're pointing at a user when you point within (registeredAngle - sgMaxPointingDeviation and registeredAngle + sgMaxPointingDeviation)
 		sgReferenceLength = 100;// reference length for position calculations; this is the length between idx0 and idx1
 
@@ -125,13 +125,11 @@
 	*/
 	var updateusersHandler = function(data) {
 		sgUsers = data.users;
-		if (data.changedUser.idx === sgUser.idx) {
+		if (data.changedUser.id === sgUser.id) {
 			//this is the user that was changed
 			sgUser = data.changedUser;
 			// console.log('update users - I was changed');
 		}
-		//console.log('update users; changed: idx'+data.changedUser.idx, sgUsers);
-		// console.log('update users: ', sgUsers);
 	};
 	
 
@@ -302,21 +300,17 @@
 	* @returns {undefined}
 	*/
 	var updatepositionHandler = function(data) {
-		sgPositions = data.positions;
-		console.log(data);
-		console.log(sgPositions);
+		// sgPositions = data.positions;
+		console.log('update pos:', data);
+		// console.log(sgPositions);
 		// console.log('updatepositionHandler:', data);
 		//console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
 		//calculate the angles to all users
-		if (sgUser.idx === data.changedUser.idx) {
+		if (sgUser.id === data.changedUser.id) {
 			// console.log('I can now be positioned');
 			// this user has just become aware of its position
 		}
 
-		// if this user already has a position, calculate angles to others
-		if (sgUser.position) {
-			// calculateAnglesToOtherUsers();
-		}
 	};
 	
 	
@@ -467,7 +461,7 @@
 		var	otherUserId = $(evt.currentTarget).find('[name="calibrate-user-id"]').val(),
 			currCalibration = {
 				fromId: sgUser.id,
-				toId: otherUserId,// wouldn't it be more logical to store idx?
+				toId: otherUserId,
 				angle: angle
 			};
 

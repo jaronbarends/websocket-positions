@@ -18,7 +18,6 @@ var express,
 var sgRooms,
 	sgRoomname = 'defaultRoom',//we'll only be using one room
 	sgUsers = [],
-	sgPositions = [],
 	sgReferenceLength = 100;
 
 
@@ -450,13 +449,13 @@ var sgRooms,
 		for (var i=0, len=user.anglesToOtherUsersOnGrid.length; i<len; i++) {
 			var oldAngleObj = user.anglesToOtherUsersOnGrid[i],
 				angleOnGrid = oldAngleObj.angle,
-				toIdx = oldAngleObj.toIdx;
+				toId = oldAngleObj.toId;
 
 			var angleForDevice = angleOnGrid + user.angleToGrid;
 			angleForDevice = rebaseTo360(angleForDevice);
 
 			var angleObj = {
-				toIdx: toIdx,
+				toId: toId,
 				angle: angleForDevice
 			};
 
@@ -481,14 +480,38 @@ var sgRooms,
 		user.anglesToOtherUsersOnGrid = [];// reset the array
 		user.anglesToOtherUsers = [];// reset the array
 
+		// //loop through all positioned users
+		// for (var idx=0, len=sgPositions.length; idx<len; idx++) {
+		// 	if (idx === user.idx) {
+		// 		// it's this user itself, no need to calculate position
+		// 		continue;
+		// 	}
+		// 	var otherX = sgPositions[idx].x,
+		// 		otherY = sgPositions[idx].y,
+		// 		dx = otherX - myX,
+		// 		dy = otherY - myY;
+
+		// 	//calculate the angle on the reference grid
+		// 	var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+		// 		degreesOnGrid = radiansToDegrees(radiansOnGrid),
+		// 		angleObj = {
+		// 			toId: id,
+		// 			angle: degreesOnGrid
+		// 		};
+
+		// 	user.anglesToOtherUsersOnGrid.push(angleObj);
+		// 	// console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degreesOnGrid);
+		// }
+
 		//loop through all positioned users
-		for (var idx=0, len=sgPositions.length; idx<len; idx++) {
-			if (idx === user.idx) {
-				// it's this user itself, no need to calculate position
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			var otherUser = sgUsers[i];
+			if (otherUser.id === user.id || !otherUser.isPositioned) {
+				// it's this user itself, or an unpositioned user; no need to calculate position
 				continue;
 			}
-			var otherX = sgPositions[idx].x,
-				otherY = sgPositions[idx].y,
+			var otherX = otherUser.position.x,
+				otherY = otherUser.position.y,
 				dx = otherX - myX,
 				dy = otherY - myY;
 
@@ -496,7 +519,7 @@ var sgRooms,
 			var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
 				degreesOnGrid = radiansToDegrees(radiansOnGrid),
 				angleObj = {
-					toIdx: idx,
+					toId: otherUser.id,
 					angle: degreesOnGrid
 				};
 
@@ -514,8 +537,8 @@ var sgRooms,
 	* @returns {undefined}
 	*/
 	var calculateAllUsersAnglesToOtherUsers = function() {
-		for (var idx=0, len=sgUsers.length; idx<len; idx++) {
-			var user = sgUsers[idx];
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			var user = sgUsers[i];
 
 			if (user.isPositioned) {
 				calculateSingleUsersAngleToOtherUsers(user);
@@ -721,8 +744,6 @@ var sgRooms,
 			var position = getCalculatedPosition(user);
 			user.position = position;
 			user.isPositioned = true;
-			sgPositions.push(position);
-			// console.log('pushing position', sgPositions.length, sgPositions);
 
 			//update the object which has every user's angles to all other users
 			calculateAllUsersAnglesToOtherUsers();
@@ -732,8 +753,7 @@ var sgRooms,
 
 			var positionData = {
 				users: sgUsers,
-				changedUser: user,
-				positions: sgPositions
+				changedUser: user
 			};
 
 			//here we can recalculate all users' angles to their peers
