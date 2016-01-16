@@ -140,7 +140,7 @@
 	* send an event to the socket server that will be passed on to all sockets
 	* @returns {undefined}
 	*/
-	var emitEvent = function(eventName, eventData) {
+	var emitPassTroughEvent = function(eventName, eventData) {
 		var data = {
 			eventName: eventName,
 			eventData: eventData
@@ -172,7 +172,7 @@
 				id: io.id,
 				orientation: sgDevice.orientation
 			};
-			emitEvent('tiltchange', newData);
+			emitPassTroughEvent('tiltchange', newData);
 		}
 	};
 
@@ -215,16 +215,27 @@
 	* @returns {undefined}
 	*/
 	var initLogoutForm = function() {
-		$('#logout-form').on('submit', function(e) {
-			e.preventDefault();
+		$('#logout-form').on('submit', leaveHandler);
+	};
+
+
+	/**
+	* 
+	* @returns {undefined}
+	*/
+	var leaveHandler = function(e) {
+			if (e) {
+				//e is not sent by server on reset passthrough event
+				e.preventDefault();
+			}
 
 			io.emit('leave', sgUser);
 
 			$('#login-form').show();
 			$('#logout-form').hide();
 			$('#calibration-box').hide();
-		});
 	};
+	
 	
 
 	/**
@@ -284,75 +295,6 @@
 	var userDisconnectHandler = function(data) {
 		//console.log('disconnect:', data);
 	};
-	
-
-
-	// /**
-	// * correct the angles in sgAnglesToOtherUsersOnGrid with this device's orientation
-	// * so we get the angles in this device's coordinate system
-	// * @returns {undefined}
-	// */
-	// var correctAnglesForDevice = function() {
-	// 	//sgAnglesToOtherUsers
-	// 	for (var i=0, len=sgAnglesToOtherUsersOnGrid.length; i<len; i++) {
-	// 		var oldAngleObj = sgAnglesToOtherUsersOnGrid[i],
-	// 			angleOnGrid = oldAngleObj.angle,
-	// 			toIdx = oldAngleObj.toIdx;
-
-	// 		var angleForDevice = angleOnGrid + sgUser.angleToGrid;
-	// 		angleForDevice = rebaseTo360(angleForDevice);
-
-	// 		var angleObj = {
-	// 			toIdx: toIdx,
-	// 			angle: angleForDevice
-	// 		};
-
-	// 		sgAnglesToOtherUsers.push(angleObj);
-	// 	}
-	// 	//now sort the array by angle
-	// 	sgAnglesToOtherUsers.sort(function(a,b) {
-	// 		return (a.angle - b.angle);
-	// 	});
-	// };
-	
-
-	// /**
-	// * 
-	// * @returns {undefined}
-	// */
-	// var calculateAnglesToOtherUsers = function() {
-	// 	var myX = sgUser.position.x,
-	// 		myY = sgUser.position.y;
-
-	// 	sgAnglesToOtherUsersOnGrid = [];// reset the array
-	// 	sgAnglesToOtherUsers = [];// reset the array
-
-	// 	//loop through all positioned users
-	// 	for (var idx=0, len=sgPositions.length; idx<len; idx++) {
-	// 		if (idx === sgUser.idx) {
-	// 			// it's this user itself, no need to calculate position
-	// 			continue;
-	// 		}
-	// 		var otherX = sgPositions[idx].x,
-	// 			otherY = sgPositions[idx].y,
-	// 			dx = otherX - myX,
-	// 			dy = otherY - myY;
-
-	// 		//calculate the angle on the reference grid
-	// 		var radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
-	// 			degreesOnGrid = radiansToDegrees(radiansOnGrid),
-	// 			angleObj = {
-	// 				toIdx: idx,
-	// 				angle: degreesOnGrid
-	// 			};
-
-	// 		sgAnglesToOtherUsersOnGrid.push(angleObj);
-	// 		console.log('to ',idx,': dx', dx, 'dy', dy, 'degrees:', degreesOnGrid);
-	// 	}
-
-	// 	correctAnglesForDevice();
-	// };
-	
 
 
 	/**
@@ -390,6 +332,7 @@
 		io.on('newuser', newUserHandler);
 		io.on('userleft', userLeftHandler);
 		io.on('disconnect', userDisconnectHandler);
+		io.on('reset', leaveHandler);
 		io.on('updateusers', updateusersHandler);
 		io.on('updateposition', updatepositionHandler);
 	};

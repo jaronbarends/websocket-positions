@@ -247,8 +247,8 @@ var sgRooms,
 	* @returns {undefined}
 	*/
 	var reset = function() {
-		console.log('reset');
 		// io.sockets.in(sgRoomname).leave(sgRoomname);
+		sgRooms.emit('reset')
 	};
 	
 	
