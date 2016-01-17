@@ -301,7 +301,7 @@
 	*/
 	var updatepositionHandler = function(data) {
 		// sgPositions = data.positions;
-		console.log('update pos:', data);
+		// console.log('update pos:', data);
 		// console.log(sgPositions);
 		// console.log('updatepositionHandler:', data);
 		//console.log('new position for user ', data.changedUser.username,':', data.changedUser.position);
@@ -319,10 +319,9 @@
 	* @returns {undefined}
 	*/
 	var resetHandler = function(e) {
-		console.log('reset called');
 		setTimeout(function() {
 			document.location.reload();
-		}, 500);
+		}, 200);
 	};
 	
 	

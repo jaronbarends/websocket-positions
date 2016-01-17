@@ -26,11 +26,7 @@ External library for handling websockets
 
 Creates a websocket, and lets the _document_ trigger an event `ready.socket` with a data-object containing the socket. Other scripts can listen for that event, and store a reference to the socket.
 
-###hub.js
 
-Code for handling the hub (duh)
-
-###remote.js
 
 
 

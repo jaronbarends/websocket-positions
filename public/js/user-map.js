@@ -17,7 +17,9 @@
 		sgUsers,
 		$sgMap = $('#user-map'),
 		$sgUserCloneSrc = $('#clone-src').find('.user'),
-		$sgRef;//reference user
+		$sgRef,//reference user
+		sgMapCenter,
+		sgMapRotation;
 
 
 
@@ -177,6 +179,98 @@
 
 
 	/**
+	* parse angle in radians to degrees
+	* @param {number} radians The angle in radians
+	* @returns {number} the angle in degrees
+	*/
+	var radiansToDegrees = function(radians) {
+		var degrees = 360*radians / (2*Math.PI);
+		return degrees;
+	};
+
+
+	/**
+	* update the bounds of the map, so it fits snugly around its users
+	* and calculate the new center of the map
+	* @returns {undefined}
+	*/
+	var updateMapBounds = function() {
+		console.log('updateMapBounds');
+		//we can only rotate the map if this user is positioned
+		if (sgUser.isPositioned) {
+			// console.log('updateMapBounds - im poositioned');
+		} else {
+			// console.log('sgUser:',sgUser);
+			// console.log('updateMapBounds - sgUsers:',sgUsers);
+		}
+		var xMin = 0,
+			xMax = 0,
+			yMin = 0,
+			yMax = 0;
+
+		//determine the bounds of the map
+		for (var i=0, len=sgUsers.length; i<len; i++) {
+			var user = sgUsers[i];
+			// console.log('updateMapBounds - user:', user);
+			if (user.position) {
+				var x = user.position.x,
+					y = user.position.y;
+
+				// console.log('updateMapBounds:', x,y);
+
+				xMin = Math.min(xMin, x);
+				xMax = Math.max(xMax, x);
+				yMin = Math.min(yMin, y);
+				yMax = Math.max(yMax, y);
+			}
+			// console.log('updateMapBounds: xmin:', xMin, 'xmax:',xMax,'ymin:',yMin,'ymax:', yMax);
+		}
+
+		var w = Math.abs(xMax - xMin),
+			h = Math.abs(yMax - yMin);
+
+		$sgMap.css({
+			width: w+'px',
+			height: h+'px'
+		});
+		console.log('w,h', w, h);
+		sgMapCenter = {
+			x: Math.round((xMax - xMin)/2),
+			y: Math.round((yMax - yMin)/2)
+		};
+		// console.log('updateMapBounds - center:', sgMapCenter);
+	};
+	
+
+	/**
+	* rotate the map so this user is at bottom
+	* @returns {undefined}
+	*/
+	var updateMapRotation = function() {
+		if (sgUser.isPositioned) {
+			//we can only rotate map when user has position
+			//calculate the angle from user to map center
+			var dx = sgMapCenter.x - sgUser.position.x,
+				dy = sgMapCenter.y - sgUser.position.y,
+				radiansOnGrid = Math.atan2(dx, dy),//the atan2 method requires that you specify (y,x) as arguments, but in our case, 0-degree axis is the y axis, so we specify (x,y).
+				degreesOnGrid = radiansToDegrees(radiansOnGrid);
+			sgMapRotation = 180+degreesOnGrid;// I don't really get why I have to add 180, but it works ;)
+			$sgMap.css({
+					transform: 'rotate('+sgMapRotation+'deg)'
+				})
+				.find('.user')
+				.css({
+					transform: 'rotate('+(-1*sgMapRotation)+'deg)'
+				});
+
+			// console.log('updateMapRotation - dx,dy:', dx, dy);
+			// console.log('updateMapRotation - sgMapRotation:',sgMapRotation);
+		}
+	};
+	
+
+
+	/**
 	* update a user's position
 	* @param {object} user The user object of the user we want to position
 	* @returns {undefined}
@@ -200,6 +294,7 @@
 	};
 	
 	
+	
 
 	/**
 	* a user's position has been updated
@@ -207,7 +302,15 @@
 	* @param {object} data Object containing users-array and changeduser {users, changedUser}
 	*/
 	var updatepositionHandler = function(data) {
+		// console.log('updata:', data);
+		sgUsers = data.users;
+		if (data.changedUser.id === sgUser.id) {
+			//then this user was changed
+			sgUser = data.changedUser;
+		}
 		updateUserPosition(data.changedUser);
+		updateMapBounds();
+		updateMapRotation();
 	};
 	
 
