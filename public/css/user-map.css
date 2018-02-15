@@ -3,7 +3,7 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	margin: 4em 0;
+	margin: 4em 0 2em;
 	border: 2px solid #eee;
 	width: 20em;
 	height: 20em;
@@ -23,8 +23,16 @@
 	transform-origin: center center;
 }
 
+.waiting-room {
+	margin: 0 0 1em;
+	width: 100%;
+	min-height: 1em;
+	border: 1px solid #eee;
+	background: #ffc;
+}
+
 .map__center {
-	position: absolute;
+	position: absolute;n
 	top: 50%;
 	left: 50%;
 	width: 5px;

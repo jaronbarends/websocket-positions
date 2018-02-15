@@ -1,28 +1,28 @@
-#websocket remote
+# websocket-positions
 
-Proof-of-concept for creating a remote control using websockets
+Proof-of-concept for making websocket clients aware of eachothers physical position
 
 Uses express node-server in combination with socket.io.
 
-##File structure
+## File structure
 
-The root folder contains the node-server (_socket-server.js_) and the npm stuff. Everything in the folder _public_ can be served by the node-server.
+The root folder contains the node-server (_socket-position-server.js_) and the npm stuff. Everything in the folder _public_ can be served by the node-server.
 
-##Javascript modules
+## Javascript modules
 
 The functionalities have been seperated as much as possible into different javascript files to prepare for re-use.
 
-###socket-server.js
+### socket-position-server.js
 
 This is the server you run to serve the pages: `node socket-position-server`
 
 The socket-server serves files in the _public_ directory and handles traffic between sockets. Sockets can send events to the socket-server, and then you can add code to the server to handle that event. Mostly, you'll just want to pass it on. ? It may be an idea to create a special type of event that always gets passed through, containing some identifier?
 
-###socket.io.js
+### socket.io.js
 
 External library for handling websockets
 
-###socket.js
+### socket.js
 
 Creates a websocket, and lets the _document_ trigger an event `ready.socket` with a data-object containing the socket. Other scripts can listen for that event, and store a reference to the socket.
 

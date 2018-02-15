@@ -442,6 +442,57 @@ var sgRooms,
 
 		return oppositeGridAngle;
 	};
+
+
+	/**
+	* check if we have any overlapping angle segments
+	* if so, devide the angle between the them in two
+	* @param {object} segments Object containing a users angle segments
+	* @returns {object} The corrected segments object 
+	*/
+	var correctOverlappingAngleSegments = function(segments) {
+		for (var i=0, len=segments.length; i<len; i++) {
+			// var seg = segments[i],
+			// 	nextSeg = segments			
+		}
+
+		return segments;
+	};
+	
+
+
+	/**
+	* For a user, calculate the segments within which we consider them to point to every other user
+	* @param {object} user The user whose angles we want to calculate
+	* @returns {undefined}
+	*/
+	var calculateSingleUsersAngleSegmentsToOtherUsers = function(user) {
+		var angles = user.anglesToOtherUsers,
+			angleMargin = 5,//when the difference between this user's rotation and the angle to another user is within this margin, we consider the user to point to the other user
+			segments = [];
+
+		for (var i=0, len=angles.length; i<len; i++) {
+			var angleObj = angles[i],
+				angle = angleObj.angle,
+				start = angle - angleMargin,
+				end = angle + angleMargin;
+
+			start = rebaseTo360(start);
+			end = rebaseTo360(end);
+
+			var segmentObj = {
+				toId: angleObj.id,
+				start: start,
+				end: end
+			};
+
+			segments.push(segmentObj);
+		}
+
+		//now loop through segments once more, to see if we don't have overlapping segments
+		segments = correctOverlappingAngleSegments(segments);
+	};
+	
 	
 	
 	/**
@@ -510,6 +561,9 @@ var sgRooms,
 		}
 
 		correctAnglesForDevice(user);
+
+		//now that we now the angles in this device's coordinate system, we can calculate the segments in which we consider them point to another user
+		calculateSingleUsersAngleSegmentsToOtherUsers(user);
 	};
 	
 	

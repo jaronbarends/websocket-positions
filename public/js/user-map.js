@@ -16,6 +16,7 @@
 		$sgYou = $('#user--you'),
 		sgUsers,
 		$sgMap = $('#user-map'),
+		$sgWaitingRoom = $('#waiting-room'),
 		$sgUserCloneSrc = $('#clone-src').find('.user'),
 		$sgRef,//reference user
 		sgMapCenter,
@@ -84,7 +85,8 @@
 				.text(user.username.charAt(0))
 				.end()
 				.attr('id', user.id)
-				.appendTo($sgMap)
+				.appendTo($sgMap);
+				//TODO: check if user has position already (can happen when this user enters later) and add to waiting room or user map OR just add them to waiting room, and have them positioned by updateUserPosition
 		}
 
 		if (user.isRef) {
@@ -92,7 +94,7 @@
 		}
 
 		$user.find('.avatar')
-			.css(css)
+			.css(css);
 	};
 
 
@@ -110,6 +112,7 @@
 					.removeAttr('style')
 					.find('.avatar')
 					.removeAttr('style');
+					//todo: add to waiting-room
 			} else {
 				$user.addClass('user--is-leaving');
 
@@ -289,6 +292,7 @@
 			// console.log('its me');
 		}
 
+		//todo remove user from waiting room and add to map
 		$user.removeClass('user--has-unknown-position')
 			.css(pos);
 	};
