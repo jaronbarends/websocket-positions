@@ -203,6 +203,8 @@
 			var $form = $(e.currentTarget);
 			sgUser.username = $form.find('[name="username"]').val() || sgUser.username;
 
+			displayIdentifier();
+
 			io.emit('join', sgUser);
 		});
 	};

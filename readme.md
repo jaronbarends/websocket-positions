@@ -1,8 +1,22 @@
 # websocket-positions
 
-Proof-of-concept for making websocket clients aware of eachothers physical position
+Proof-of-concept for making websocket clients aware of eachother's physical position
 
 Uses express node-server in combination with socket.io.
+
+## Getting started
+
+install dependencies
+```
+npm install
+```
+
+Start the socket server
+```
+node socket-position-server.js
+```
+
+open browser at http://localhost:3000/index.html
 
 ## File structure
 
