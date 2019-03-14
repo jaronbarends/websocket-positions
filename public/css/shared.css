@@ -26,20 +26,30 @@ body {
 
 
 /*-- Start forms --*/
+
+	label {
+		display: block;
+	}
 	
 	.btn,
-	input[type="text"],
-	input[type="submit"] {
+	input[type="text"] {
+		display: inline-block;
 		border: 1px solid #ccc;
 		border-radius: 4px;
 		padding: 0.25em 0.5em;
 		-webkit-appearance: none;
+		text-decoration: none;
 	}
 
-	.btn,
-	input[type="submit"] {
+	.btn {
 		border-color: transparent;
 		background: cornflowerblue;
+	}
+
+	.btn.secondary {
+		background: transparent;
+		color: cornflowerblue;
+		border-color: currentColor;
 	}
 	
 /*-- End forms --*/

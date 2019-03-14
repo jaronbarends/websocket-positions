@@ -46,8 +46,9 @@
 		<div id="instruction-box" class="instruction-box">
 
 			<form id="login-form" action="">
-				<input type="text" name="username" value="" placeholder="Your name (please)">
-				<input type="submit" value="Go">
+				<label for="username">What's your name?</label>
+				<input id="username" type="text" name="username" value="" placeholder="Your name (please)">
+				<input class="btn" type="submit" value="Go">
 			</form>
 
 			<form id="logout-form" class="u-hidden" action="">
@@ -56,22 +57,23 @@
 
 			<div id="calibration-box" class="u-hidden">
 				<h2>point your device at <span class="calibrate-user-name">...</span></h2>
-
-				<form id="dummy-calibration-form" class="dummy-calibration-form" action="">
-					<input type="hidden" name="calibrate-user-id">
-					<input type="text" id="dummy-angle" class="few-chars" name="dummy-angle" value="">
-					<input type="submit" value="use angle">
-				</form>
 				
 				<form id="calibration-form" action="">
 					<input type="hidden" name="calibrate-user-id">
-					<input type="submit" value="Pointing at them now">
+					<input class="btn" type="submit" value="Pointing at them now">
+				</form>
+
+				<h2>or use dummy value</h2>
+				<form id="dummy-calibration-form" class="dummy-calibration-form" action="">
+					<input type="hidden" name="calibrate-user-id">
+					<input type="text" id="dummy-angle" class="few-chars" name="dummy-angle" value="">
+					<input class="btn secondary" type="submit" value="use dummy angle">
 				</form>
 			</div>
 
 		</div><!-- /.instruction-box -->
 
-		<a href="#" id="reset-btn">Reset</a>
+		<a href="#" class="btn secondary" id="reset-btn">Reset all</a>
 
 
 	</div><!-- /.content-width -->
