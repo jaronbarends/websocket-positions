@@ -10,6 +10,6 @@
     "node": "^8.11.4"
   },
   "scripts": {
-    "start": "node socket-position-server.js"
+    "start": "node socket-triangulation-server.js"
   }
 }
