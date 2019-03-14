@@ -3,14 +3,13 @@
   "version": "0.0.1",
   "description": "calculate device positions",
   "dependencies": {
-    "express": "^4.10.2",
-    "socket.io": "^1.7.4"
+    "express": "^4.15.2",
+    "socket.io": "^2.2.0"
   },
   "engines": {
-    "node": "0.12.x"
+    "node": "^8.11.4"
   },
   "scripts": {
-    "preinstall": "npm install --save socket.io --msvs_version=2013",
     "start": "node socket-position-server.js"
   }
 }
