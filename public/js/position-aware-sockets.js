@@ -197,6 +197,7 @@
 	* @returns {undefined}
 	*/
 	var initLoginForm = function() {
+		$('#username').on('focus', function(e) {e.target.select()});
 		$('#login-form').on('submit', function(e) {
 			e.preventDefault();
 
