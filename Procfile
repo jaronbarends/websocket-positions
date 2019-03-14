@@ -1,1 +1,1 @@
-web: node socket-position-server.js
+web: node socket-triangulation-server.js
