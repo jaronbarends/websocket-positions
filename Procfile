@@ -1,1 +1,1 @@
-web: node socket-triangulation-server.js
+web: npm run start
